@@ -116,7 +116,11 @@ for (i in 1:nrow(dir)){
   }
 }
 
+# Update geom field
 RPostgreSQL::dbSendQuery(con, "UPDATE body_condition.geo_images SET geom = ST_SetSRID(ST_MakePoint(exif_longitude, exif_latitude), 4326)")
+
+# Update flight_id field
+####### ADD CODE HERE ONCE tbl_flight populated!!!!!
 
 RPostgreSQL::dbDisconnect(con)
 rm(con)
