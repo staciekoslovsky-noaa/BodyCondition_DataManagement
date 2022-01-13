@@ -22,6 +22,7 @@ install_pkg("tidyverse")
 # Run code -------------------------------------------------------
 setwd(wd)
 "%notin%" <- Negate("%in%")
+options(digits.secs=3)
 
 # Get list of already imported data from DB
 con <- RPostgreSQL::dbConnect(PostgreSQL(), 
@@ -31,13 +32,16 @@ con <- RPostgreSQL::dbConnect(PostgreSQL(),
                               user = Sys.getenv("pep_admin"), 
                               rstudioapi::askForPassword(paste("Enter your DB password for user account: ", Sys.getenv("pep_admin"), sep = "")))
 
-imported <- RPostgreSQL::dbGetQuery(con, "SELECT DISTINCT lrf_file_name FROM body_condition.tbl_lrf_feed")
+RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_lrf_feed")
+
+imported <- RPostgreSQL::dbGetQuery(con, "SELECT DISTINCT lrf_file_name FROM body_condition.geo_lrf_feed")
 
 # Create list of camera folders within which data need to be processed 
 dir <- list.dirs(wd, full.names = TRUE, recursive = FALSE)
 dir <- data.frame(path = dir[grep("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", dir)], stringsAsFactors = FALSE) 
 dir <- dir %>%
   mutate(path = paste(path, 'LRF_data', sep = "/"))
+
 for (i in 1:nrow(dir)){
   if(!dir.exists(dir$path[i])) next 
   files <- list.files(dir$path[i], full.names = TRUE, recursive = FALSE)
@@ -49,7 +53,61 @@ for (i in 1:nrow(dir)){
     # Check if file already imported
     if(files$file_name[j] %in% imported$lrf_file_name) next
     
-    # Process and import data
+    processed_id <- RPostgreSQL::dbGetQuery(con, "SELECT max(id) FROM body_condition.geo_lrf_feed")
+    processed_id$max <- ifelse(is.na(processed_id$max), 0, processed_id$max)
     
+    # Process and import data
+    lrf <- read.table(files$path[j], sep = ",", col.names = c("utc_gps_time", "utc_gps_date", "laser_range_raw_m", "laser_range_median", "laser_range_first_median", "laser_range_last_median", 
+                                                              "laser_signal_strength_first", "laser_signal_strength_last", "laser_background_noise", "laser_lost_signal_confirmation", 
+                                                              "gps_lat", "gps_lat_ns", "gps_lon", "gps_lon_ew", "gps_speed", "gps_track_angle", "gps_magvar", "test01", "test02", "test03"), 
+                      skip = 1, header = FALSE, stringsAsFactors = FALSE, blank.lines.skip = TRUE, colClasses = "character", dec = ".", fill = TRUE, strip.white = TRUE)
+    
+    lrf <- lrf %>%
+      filter(laser_range_raw_m != "-1.00") %>% 
+      filter(utc_gps_date != '//') %>%
+      filter(gps_lat != "") %>%
+      filter(nchar(gps_lat_ns) == 1) %>%
+      filter(gps_lon != "") %>%
+      filter(nchar(gps_lon_ew) == 1) %>%
+      filter(gps_magvar != "$GPRMC") %>%
+      mutate(id = 1:n() + processed_id$max,
+             lrf_file_name = files$file_name[j],
+             gps_dt = ymd_hms(as.POSIXct(paste(utc_gps_date, utc_gps_time, sep = " "), format = "%m/%d/%y %H:%M:%OS", tz = "UTC"), tz = "UTC"),
+             laser_range_raw_m = as.numeric(laser_range_raw_m),
+             laser_range_median = as.numeric(laser_range_median),
+             laser_range_first_median = as.numeric(laser_range_first_median),
+             laser_range_last_median = as.numeric(laser_range_last_median),
+             laser_signal_strength_first = as.numeric(laser_signal_strength_first),
+             laser_signal_strength_last = as.numeric(laser_signal_strength_last),
+             laser_background_noise = as.numeric(laser_background_noise),
+             laser_lost_signal_confirmation = as.numeric(laser_lost_signal_confirmation),
+             gps_latitude = round(as.numeric(stringr::str_sub(gps_lat, 1, 2)) + as.numeric(stringr::str_sub(gps_lat, -nchar(gps_lat) + 2, -1))/60, 9),
+             gps_longitude = round(as.numeric(ifelse(gps_lon_ew == "W", 
+               -(as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60),
+               as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60)), 9),
+             qa_status_lku = 'U',
+             geom = "0101000020E610000000000000000000000000000000000000") %>%
+      # Set numeric NA values to -99
+      mutate(laser_range_raw_m = ifelse(is.na(laser_range_raw_m), -99, laser_range_raw_m),
+             laser_range_median = ifelse(is.na(laser_range_median), -99, laser_range_median),
+             laser_range_first_median = ifelse(is.na(laser_range_first_median), -99, laser_range_first_median),
+             laser_range_last_median = ifelse(is.na(laser_range_last_median), -99, laser_range_last_median),
+             laser_signal_strength_first = ifelse(is.na(laser_signal_strength_first), -99, laser_signal_strength_first),
+             laser_signal_strength_last = ifelse(is.na(laser_signal_strength_last), -99, laser_signal_strength_last),
+             laser_background_noise = ifelse(is.na(laser_background_noise), -99, laser_background_noise),
+             laser_lost_signal_confirmation = ifelse(is.na(laser_lost_signal_confirmation), -99, laser_lost_signal_confirmation),
+      ) %>%
+      select(id, lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, laser_range_first_median, laser_range_last_median,
+            laser_signal_strength_first, laser_signal_strength_last, laser_background_noise, laser_lost_signal_confirmation,
+            gps_latitude, gps_longitude, qa_status_lku, geom
+            )
+    
+    # Write data to the DB
+    RPostgreSQL::dbWriteTable(con, c("body_condition", "geo_lrf_feed"), lrf, append = TRUE, row.names = FALSE)
   }
 }
+
+dbSendQuery(con, "UPDATE body_condition.geo_lrf_feed SET geom = ST_SetSRID(ST_MakePoint(gps_longitude, gps_latitude), 4326)")
+
+RPostgreSQL::dbDisconnect(con)
+rm(con)
