@@ -1,0 +1,5 @@
+update body_condition.geo_images i
+set flight_id = f.id
+from body_condition.tbl_flights f
+where flight_date_local = to_date(substring(image_name from '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), 'YYYYMMDD') and
+flight_number = substring(image_name from 'fl[0-9][0-9]')
