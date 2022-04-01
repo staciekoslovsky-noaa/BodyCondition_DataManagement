@@ -2,7 +2,7 @@
 # S. Hardy
 
 # Set Working Variables
-wd <- "\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition"
+wd <- "\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\"
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -66,7 +66,7 @@ for (i in 1:nrow(dir)){
     
   # Process and import data if any images remain in list
   if (nrow(images) > 0) {
-    original_exif <- exifr::read_exif("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\test_exif_DO_NOT_DELETE.JPG", tags = tags)
+    original_exif <- exifr::read_exif("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\test_exif_DO_NOT_DELETE.JPG", tags = tags)
     original_exif <- data.frame(SourceFile = original_exif[0, c(1:2)], stringsAsFactors = FALSE)
     
     temp_exif <- exifr::read_exif(images$path, tags = tags)
