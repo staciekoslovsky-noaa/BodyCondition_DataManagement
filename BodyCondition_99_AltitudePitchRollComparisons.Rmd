@@ -1,0 +1,220 @@
+---
+title: "UAS Body Condition: Comparison of Altitude/Range, Pitch and Roll from Drone and LRF Values"
+author: "Stacie Hardy"
+date: "3/30/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE) 
+
+library(tidyverse)
+library(stringr)
+library(lubridate)
+
+# Import image data
+images <- read.csv("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022_03_25_X_M2EA-LRFtesting\\Images\\image_ins_readings_20200328.csv")
+images <- images %>%
+  mutate(image_dt = as.POSIXct(format(lubridate::ymd_hms(DateTimeOriginal, tz = "UTC"), tz = "UTC"), tz = "UTC"),
+         image_name = FileName,
+         gps_altitude = GPSAltitude,
+         relative_altitude = RelativeAltitude,
+         flight_yaw = FlightYawDegree,
+         flight_pitch = FlightPitchDegree,
+         flight_roll = FlightRollDegree,
+         gimbal_yaw = GimbalYawDegree,
+         gimbal_pitch = GimbalPitchDegree,
+         gimbal_roll = GimbalRollDegree) %>%
+  select(image_name, image_dt, gps_altitude, relative_altitude,
+         flight_yaw, flight_pitch, flight_roll,
+         gimbal_yaw, gimbal_pitch, gimbal_roll)
+
+# Import LRF A data
+lrf_a <- read.table("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022_03_25_X_M2EA-LRFtesting\\LRF_data\\LRF_A\\utc_date_--_utc_time_21-34_altitude-gps.csv", 
+                    sep = ",", col.names = c("utc_gps_time", "utc_gps_date", "laser_range_raw_m", "laser_range_median", "laser_background_noise", 
+                                               "gps_lat", "gps_lat_ns", "gps_lon", "gps_lon_ew", "gps_speed", "imu_pitch", "imu_roll", "test01", "test02", "test03"),
+                    skip = 1, header = FALSE, stringsAsFactors = FALSE, blank.lines.skip = TRUE, colClasses = "character", dec = ".", fill = TRUE, strip.white = TRUE)
+lrf_a <- lrf_a %>%
+  filter(laser_range_raw_m != "-1.00") %>% 
+  filter(utc_gps_date != '//') %>%
+  filter(gps_lat != "") %>%
+  filter(nchar(gps_lat_ns) == 1) %>%
+  filter(gps_lon != "") %>%
+  filter(nchar(gps_lon_ew) == 1) %>%
+  mutate(gps_dt = ymd_hms(as.POSIXct(paste(utc_gps_date, utc_gps_time, sep = " "), format = "%m/%d/%y %H:%M:%OS", tz = "UTC"), tz = "UTC"),
+         laser_range_raw_m = as.numeric(laser_range_raw_m),
+         laser_range_median = as.numeric(laser_range_median),
+         laser_background_noise = as.numeric(laser_background_noise),
+         imu_pitch = as.numeric(imu_pitch),
+         imu_roll = as.numeric(imu_roll),
+         gps_latitude = round(as.numeric(stringr::str_sub(gps_lat, 1, 2)) + as.numeric(stringr::str_sub(gps_lat, -nchar(gps_lat) + 2, -1))/60, 9),
+         gps_longitude = round(as.numeric(ifelse(gps_lon_ew == "W", 
+           -(as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60),
+           as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60)), 9),
+         lrf_unit = "LRF_A") %>%
+  filter(!is.na(gps_dt)) %>%
+  select(lrf_unit, gps_dt, laser_range_raw_m, laser_range_median, laser_background_noise, gps_latitude, gps_longitude, imu_pitch, imu_roll)
+
+# Import LRF B data
+lrf_b <- read.table("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022_03_25_X_M2EA-LRFtesting\\LRF_data\\LRF_B\\utc_date_--_utc_time_21-54_altitude-gps.csv", 
+                    sep = ",", col.names = c("utc_gps_time", "utc_gps_date", "laser_range_raw_m", "laser_range_median", "laser_background_noise", 
+                                               "gps_lat", "gps_lat_ns", "gps_lon", "gps_lon_ew", "gps_speed", "imu_pitch", "imu_roll", "test01", "test02", "test03"),
+                    skip = 1, header = FALSE, stringsAsFactors = FALSE, blank.lines.skip = TRUE, colClasses = "character", dec = ".", fill = TRUE, strip.white = TRUE)
+lrf_b <- lrf_b %>%
+  filter(laser_range_raw_m != "-1.00") %>% 
+  filter(utc_gps_date != '//') %>%
+  filter(gps_lat != "") %>%
+  filter(nchar(gps_lat_ns) == 1) %>%
+  filter(gps_lon != "") %>%
+  filter(nchar(gps_lon_ew) == 1) %>%
+  mutate(gps_dt = ymd_hms(as.POSIXct(paste(utc_gps_date, utc_gps_time, sep = " "), format = "%m/%d/%y %H:%M:%OS", tz = "UTC"), tz = "UTC"),
+         laser_range_raw_m = as.numeric(laser_range_raw_m),
+         laser_range_median = as.numeric(laser_range_median),
+         laser_background_noise = as.numeric(laser_background_noise),
+         imu_pitch = as.numeric(imu_pitch),
+         imu_roll = as.numeric(imu_roll),
+         gps_latitude = round(as.numeric(stringr::str_sub(gps_lat, 1, 2)) + as.numeric(stringr::str_sub(gps_lat, -nchar(gps_lat) + 2, -1))/60, 9),
+         gps_longitude = round(as.numeric(ifelse(gps_lon_ew == "W", 
+           -(as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60),
+           as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60)), 9),
+         lrf_unit = "LRF_B") %>%
+  filter(!is.na(gps_dt)) %>%
+  select(lrf_unit, gps_dt, laser_range_raw_m, laser_range_median, laser_background_noise, gps_latitude, gps_longitude, imu_pitch, imu_roll)
+```
+## Introduction
+The purpose of this document is to present a comparison of altitude/range, pitch and roll values recorded by the drone and by the two laser rangefinders. These data were collected on WRC on Friday, 25 March 2022. Two laser rangefinders (A and B) were tested, and images were collected using the DJI Mavic2-Enterprise Advanced. Throughout all of the figures presented below, the values recorded by the laser rangefinder are displayed as lines (either orange or blue depending on the laser rangefinder unit) and the values recorded to the imagery exif are shown as black dots. Exif data are only available when images were taken, and up to 5 values were recorded per second by the laser rangefinder.
+
+## Comparison of Altitude Values
+The following figures show the laser rangefinder raw ranges (m) and the GPS and relative altitudes (m) recorded to the imagery exif. Generally speaking, the LRF data tracked more closely to the relative altitude values recorded in the exif data, than the GPS altitude values.
+
+```{r fig01, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_a, aes(gps_dt, laser_range_raw_m), colour = "sienna3") + 
+  geom_point(data = images, aes(image_dt, relative_altitude), colour = "black",) + 
+  xlim(min(lrf_a$gps_dt), max(lrf_a$gps_dt)) +
+  labs(x = "Date/time", y = "Relative altitude / LRF range (m)")
+```
+
+**Figure 1. LRF A range (m) compared to relative altitude (m) from image exif.** This figure is included just for showing the entirety of the dataset, though there were a number of range values recorded that were less than 1.5 m. This issue was only present in the data collected by LRF A.  
+<br> 
+<br> 
+
+```{r fig02, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_a %>% filter(laser_range_raw_m > 1.5), aes(gps_dt, laser_range_raw_m), colour = "sienna3") + 
+  geom_point(data = images, aes(image_dt, relative_altitude), colour = "black",) + 
+  xlim(min(lrf_a$gps_dt), max(lrf_a$gps_dt))+
+  labs(x = "Date/time", y = "Relative altitude / LRF range (m)")
+```
+
+**Figure 2. LRF A range (m; filtered to values greater than 1.5 m) compared to relative altitude (m) from image exif.** The data presented in this figure are identical to those displayed in Figure 1, but all LRF range values of less than 1.5 m have been removed.  
+<br> 
+<br> 
+
+```{r fig03, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_b, aes(gps_dt, laser_range_raw_m), colour = "deepskyblue3") + 
+  geom_point(data = images, aes(image_dt, relative_altitude), colour = "black") + 
+  xlim(min(lrf_b$gps_dt), max(lrf_b$gps_dt))+
+  labs(x = "Date/time", y = "Relative altitude / LRF range (m)")
+```
+
+**Figure 3. LRF B range (m) compared to relative altitude (m) from image exif.**    
+<br> 
+<br> 
+
+```{r fig04, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_a %>% filter(laser_range_raw_m > 1.5), aes(gps_dt, laser_range_raw_m), colour = "sienna3") + 
+  geom_point(data = images, aes(image_dt, gps_altitude), colour = "black") + 
+  xlim(min(lrf_a$gps_dt), max(lrf_a$gps_dt))+
+  labs(x = "Date/time", y = "GPS altitude / LRF range (m)")
+```
+
+**Figure 4. LRF A range (m) compared to GPS altitude (m) from image exif.**    
+<br> 
+<br> 
+
+```{r fig05, echo = FALSE}
+ggplot() + 
+  geom_line(data = lrf_b, aes(gps_dt, laser_range_raw_m), colour = "deepskyblue3") + 
+  geom_point(data = images, aes(image_dt, gps_altitude), colour = "black") + 
+  xlim(min(lrf_b$gps_dt), max(lrf_b$gps_dt)) +
+  labs(x = "Date/time", y = "GPS altitude / LRF range (m)")
+```
+
+**Figure 5. LRF B range (m) compared to GPS altitude (m) from image exif.**    
+<br> 
+<br> 
+<br> 
+
+## Comparison of Pitch Values
+
+```{r fig06, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_a, aes(gps_dt, imu_pitch), colour = "sienna3") + 
+  # geom_point(data = images, aes(image_dt, gimbal_pitch), colour = "green") +
+  geom_point(data = images, aes(image_dt, flight_pitch), colour = "black") + 
+  xlim(min(lrf_a$gps_dt), max(lrf_a$gps_dt)) +
+  labs(x = "Date/time", y = "Pitch (degrees)")
+
+```
+
+**Figure 6. LRF A pitch (degrees) compared to pitch (degrees) from image exif.**    
+<br> 
+<br> 
+
+```{r fig07, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_b, aes(gps_dt, imu_pitch), colour = "deepskyblue3") + 
+  # geom_point(data = images, aes(image_dt, gimbal_pitch), colour = "green") +
+  geom_point(data = images, aes(image_dt, flight_pitch), colour = "black") + 
+  xlim(min(lrf_b$gps_dt), max(lrf_b$gps_dt)) +
+  labs(x = "Date/time", y = "Pitch (degrees)")
+```
+
+**Figure 7. LRF B pitch (degrees) compared to pitch (degrees) from image exif.**    
+<br> 
+<br> 
+<br> 
+
+## Comparison of Roll Value
+
+```{r A_roll, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_a, aes(gps_dt, imu_roll), colour = "sienna3") + 
+  # geom_point(data = images, aes(image_dt, gimbal_roll), colour = "green") +
+  geom_point(data = images, aes(image_dt, flight_roll), colour = "black") + 
+  xlim(min(lrf_a$gps_dt), max(lrf_a$gps_dt)) +
+  labs(x = "Date/time", y = "Roll (degrees)")
+```
+
+**Figure 8. LRF A roll (degrees) compared to roll (degrees) from image exif.**    
+<br> 
+<br> 
+
+```{r B_roll, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_b, aes(gps_dt, imu_roll), colour = "deepskyblue3") + 
+  # geom_point(data = images, aes(image_dt, gimbal_roll), colour = "green") +
+  geom_point(data = images, aes(image_dt, flight_roll), colour = "black") + 
+  xlim(min(lrf_b$gps_dt), max(lrf_b$gps_dt)) +
+  labs(x = "Date/time", y = "Roll (degrees)")
+```
+
+**Figure 9. LRF B roll (degrees) compared to roll (degrees) from image exif.**    
+<br> 
+<br> 
+
+```{r B_roll_withFilter, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf_b %>% filter(abs(imu_roll) < 100), aes(gps_dt, imu_roll), colour = "deepskyblue3") + 
+  # geom_point(data = images, aes(image_dt, gimbal_roll), colour = "green") +
+  geom_point(data = images, aes(image_dt, flight_roll), colour = "black") + 
+  xlim(min(lrf_b$gps_dt), max(lrf_b$gps_dt)) +
+  labs(x = "Date/time", y = "Roll (degrees)")
+```
+
+**Figure 10. LRF B roll (degrees; filtered to absolute values less than 100 degrees) compared to roll (degrees) from image exif.** The data presented in this figure are identical to those displayed in Figure 9, but LRF roll values with an absolute value of greater than 100 degrees have been removed.    
+<br> 
+<br> 
