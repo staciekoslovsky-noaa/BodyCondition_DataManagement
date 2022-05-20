@@ -3,7 +3,8 @@
 
 # Set Working Variables
 wd <- "\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data"
-years <- c(2021, 2022)
+years <- c(#2021, 
+  2022)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -40,7 +41,7 @@ con <- RPostgreSQL::dbConnect(PostgreSQL(),
                               password = Sys.getenv("admin_pw"))
                               #rstudioapi::askForPassword(paste("Enter your DB password for user account: ", Sys.getenv("pep_admin"), sep = "")))
 
-RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_images")
+# RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_images")
 
 imported <- RPostgreSQL::dbGetQuery(con, "SELECT DISTINCT image_name, \'y\' as in_database FROM body_condition.geo_images")
 
