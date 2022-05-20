@@ -32,7 +32,8 @@ con <- RPostgreSQL::dbConnect(PostgreSQL(),
                               host = Sys.getenv("pep_ip"), 
                               #port = Sys.getenv("pep_port"), 
                               user = Sys.getenv("pep_admin"), 
-                              rstudioapi::askForPassword(paste("Enter your DB password for user account: ", Sys.getenv("pep_admin"), sep = "")))
+                              password = Sys.getenv("admin_pw"))
+                              #rstudioapi::askForPassword(paste("Enter your DB password for user account: ", Sys.getenv("pep_admin"), sep = "")))
 
 RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_lrf_feed")
 
@@ -102,11 +103,10 @@ for (y in 1:length(years)) {
         lrf <- lrf %>%
           filter(laser_range_raw_m != "-1.00") %>% 
           filter(utc_gps_date != '//') %>%
-          filter(gps_lat != "") %>%
-          filter(nchar(gps_lat_ns) == 1) %>%
-          filter(gps_lon != "") %>%
-          filter(nchar(gps_lon_ew) == 1) %>%
-          filter(gps_magvar != "$GPRMC") %>%
+          #filter(gps_lat != "") %>%
+          #filter(nchar(gps_lat_ns) == 1) %>%
+          #filter(gps_lon != "") %>%
+          #filter(nchar(gps_lon_ew) == 1) %>%
           mutate(id = 1:n() + processed_id$max,
                  lrf_file_name = files$file_name[j],
                  gps_dt = ymd_hms(as.POSIXct(paste(utc_gps_date, utc_gps_time, sep = " "), format = "%m/%d/%y %H:%M:%OS", tz = "UTC"), tz = "UTC"),
@@ -130,6 +130,8 @@ for (y in 1:length(years)) {
           # Set numeric NA values to -99
           mutate(laser_range_raw_m = ifelse(is.na(laser_range_raw_m), -99, laser_range_raw_m),
                  laser_range_median = ifelse(is.na(laser_range_median), -99, laser_range_median),
+                 gps_latitude = ifelse(is.na(gps_latitude), -99, gps_latitude),
+                 gps_longitude = ifelse(is.na(gps_longitude), -99, gps_longitude),
                  gps_speed = ifelse(is.na(gps_speed), -99, gps_speed),
                  imu_pitch = ifelse(is.na(imu_pitch), -99, imu_pitch),
                  imu_roll = ifelse(is.na(imu_roll), -99, imu_roll),
