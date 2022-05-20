@@ -2,7 +2,7 @@
 
 # Set variables -------------------
 wd <- "\\\\nmfs\\akc-nmml\\Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022"
-date_folder <- "2022-04-22"
+date_folder <- "2022-04-16"
 image_prefix <- "Dyson"
 
 process <- "copy+rename"
@@ -38,7 +38,7 @@ exif$flight <- ''
 exif <- data.frame(exif[0, c(1:4)], stringsAsFactors = FALSE)
 
 for (i in 1:length(flights)){
-  images <- list.files(flights[i], full.names = TRUE, recursive = FALSE)
+  images <- list.files(flights[i], pattern = "jpg$|JPG$|dng$|DNG$", full.names = TRUE, recursive = FALSE)
   temp_exif <- exifr::read_exif(images, tags = tags) %>%
     mutate(flight = flights[i])
   exif <- bind_rows(exif, temp_exif)
@@ -56,12 +56,15 @@ for (i in 2:nrow(exif)) {
 }
 
 exif <- exif %>%
-  mutate(new_name = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = ""))
+  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
+  select(SourceFile, FileName, NewName) 
 
 for (i in 1:nrow(exif)){
   if (process == "copy+rename") {
     file.copy(exif$SourceFile[i], path)
-    file.rename(exif$FileName[i], exif$new_name[i])
+    file.rename(exif$FileName[i], exif$NewName[i])
   } else if (process == "rename_only")
-    file.rename(exif$SourceFile[i], exif$new_name[i])
+    file.rename(exif$SourceFile[i], exif$NewName[i])
 }
+
+write.table(exif, paste(path, "\\_RenamedImages_From", date_folder, ".csv", sep = ""), sep = ",", row.names = FALSE)
