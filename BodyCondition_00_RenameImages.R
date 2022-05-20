@@ -2,7 +2,7 @@
 
 # Set variables -------------------
 wd <- "\\\\nmfs\\akc-nmml\\Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022"
-date_folder <- "2022-04-16"
+date_folder <- "2022-04-22"
 image_prefix <- "Dyson"
 
 process <- "copy+rename"
@@ -47,8 +47,16 @@ for (i in 1:length(flights)){
 
 exif <- exif %>%
   arrange(DateTimeOriginal) %>%
-  mutate(image_num = group_indices(., DateTimeOriginal)) %>%
-  mutate(new_name = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", tools::file_ext(FileName), sep = ""))
+  mutate(image_num = 1,
+         file_ext = tools::file_ext(FileName))
+
+for (i in 2:nrow(exif)) {
+  exif$image_num[i] <- ifelse(exif$file_ext[i] == exif$file_ext[i-1], exif$image_num[i-1] + 1, 
+                              ifelse(exif$DateTimeOriginal[i] == exif$DateTimeOriginal[i-1], exif$image_num[i-1], exif$image_num[i-1] + 1))
+}
+
+exif <- exif %>%
+  mutate(new_name = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = ""))
 
 for (i in 1:nrow(exif)){
   if (process == "copy+rename") {
