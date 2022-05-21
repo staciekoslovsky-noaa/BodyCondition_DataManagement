@@ -91,8 +91,8 @@ for (y in 1:length(years)) {
           mutate(laser_range_raw_m = ifelse(is.na(laser_range_raw_m), -99, laser_range_raw_m),
                  laser_range_median = ifelse(is.na(laser_range_median), -99, laser_range_median),
                  gps_speed = ifelse(is.na(gps_speed), -99, gps_speed)) %>%
-          select(id, lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, gps_latitude, gps_longitude, gps_speed, qa_status_lku, geom
-          )
+          select(id, lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, gps_latitude, gps_longitude, gps_speed, qa_status_lku, geom) %>%
+          filter(!is.na(gps_dt))
       } else {
         lrf <- read.table(files$path[j], sep = ",", col.names = c("utc_gps_time", "utc_gps_date", "laser_range_raw_m", "laser_range_median", 
                                                                   "gps_lat", "gps_lat_ns", "gps_lon", "gps_lon_ew", "gps_speed", 
@@ -143,8 +143,8 @@ for (y in 1:length(years)) {
                  raw_accel_z = ifelse(is.na(raw_accel_z), -99, raw_accel_z),) %>%
           select(id, lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, gps_latitude, gps_longitude, gps_speed, imu_pitch, imu_roll, 
                  raw_gyro_x, raw_gyro_y, raw_gyro_z, raw_accel_x, raw_accel_y, raw_accel_z,
-                 qa_status_lku, geom
-          )
+                 qa_status_lku, geom) %>%
+          filter(!is.na(gps_dt))
       }
       # Write data to the DB
       RPostgreSQL::dbWriteTable(con, c("body_condition", "geo_lrf_feed"), lrf, append = TRUE, row.names = FALSE)
