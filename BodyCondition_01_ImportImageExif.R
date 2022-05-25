@@ -89,7 +89,7 @@ for (y in 1:length(years)) {
         mutate(id = 1:n() + processed_id$max,
                image_name = FileName,
                image_path = SourceFile,
-               exif_image_dt = format(lubridate::ymd_hms(DateTimeOriginal, tz = "America/Vancouver"), tz = "UTC"),
+               exif_image_dt = format(lubridate::ymd_hms(DateTimeOriginal, tz = "UTC"), tz = "UTC"),
                exif_latitude = GPSLatitude,
                exif_longitude = GPSLongitude,
                exif_altitude_m = as.numeric(GPSAltitude),
