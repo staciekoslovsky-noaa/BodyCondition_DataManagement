@@ -1,0 +1,116 @@
+---
+title: "UAS Body Condition: Comparison of Altitude/Range, Pitch and Roll from Drone and LRF Values"
+# author: "Stacie Hardy"
+date: "Date Created: `r format(Sys.time(), '%m/%d/%Y')`"
+output: pdf_document
+
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(
+    inputFile, 
+    encoding = encoding, 
+    output_file = file.path(dirname(inputFile), 'DataSummary_Dyson_20220421_fl02.pdf')) 
+  })
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE) 
+
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(RPostgreSQL)
+library(sf)
+
+## IMPORTANT: SET VARIABLES!!!!
+flight_date <- '2022-04-21'
+flight_number <- 'fl02'
+lrf_file_name <- 'Dyson_20220421_fl02_lrf.csv'
+offset_minutes <- # positive is the time that the LRF is behind the image timestamp; negative is the time the LRF is ahead of the image timestamp
+  # 0 # for 4/16/2022 data and all other flights
+  -60 # for 4/21/2022 data
+  # 60 # for 4/22/2022 data
+
+
+# Connect to DB and get starting data
+con <- RPostgreSQL::dbConnect(PostgreSQL(), 
+                              dbname = Sys.getenv("pep_db"), 
+                              host = Sys.getenv("pep_ip"), 
+                              port = Sys.getenv("pep_port"),
+                              user = Sys.getenv("pep_user"), 
+                              password = Sys.getenv("user_pw"))
+
+offset <- offset_minutes * 60
+
+# Get data from DB
+#images <- RPostgreSQL::dbGetQuery(con, paste("SELECT image_name, exif_image_dt as image_dt, adjusted_image_dt, gps_altitude, relative_altitude, flight_yaw, flight_pitch, flight_roll, gimbal_yaw, gimbal_pitch, gimbal_roll FROM body_condition.geo_images i INNER JOIN body_condition.tbl_flight f ON f.id = i.flight_id WHERE flight_date_local = \'", flight_date, "\' and flight_number = \'", flight_number, "\'", sep = ""))
+
+images <- RPostgreSQL::dbGetQuery(con, paste("SELECT image_name, exif_image_dt, adjusted_image_dt, exif_altitude_m, exif_relative_altitude_m, exif_heading, exif_pitch, exif_roll, exif_gimbal_heading, exif_gimbal_pitch, exif_gimbal_roll, exif_latitude, exif_longitude FROM body_condition.geo_images i WHERE image_name LIKE \'%", str_replace(str_replace(flight_date, "-", ""), "-", ""), "%\' AND image_name LIKE \'%", flight_number, "%\'", sep = ""))
+
+images.sf <- sf::st_as_sf(images, coords = c("exif_longitude", "exif_latitude"), crs = st_crs(4326))
+
+# Import LRF data
+lrf <- RPostgreSQL::dbGetQuery(con, paste("SELECT lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, imu_pitch, imu_roll, gps_speed, gps_latitude, gps_longitude FROM body_condition.geo_lrf_feed WHERE lrf_file_name = \'", lrf_file_name, "\'", sep = ""))
+
+lrf.sf <- lrf %>% filter(gps_latitude != -99)
+lrf.sf <- sf::st_as_sf(lrf.sf, coords = c("gps_longitude", "gps_latitude"), crs = st_crs(4326))
+```
+## Introduction
+The purpose of this document is to present a comparison of data streams recorded by the drone and by the associated laser rangefinder during a UAS flight. The data in this report were collected on **`r flight_date`** on **flight `r flight_number`**. Images were collected using the **(placeholder) drone**, and laser rangefinder (LRF) data were collected using **LRF (placeholder)**. Exif data are only available when images were taken, and up to 5 values were recorded per second by the LRF. The data presented here are reflective of the timestamp recorded to the image's exif data, and an offset of **`r offset_minutes` minutes** applied to the LRF data.
+
+## Comparison of Location Data
+```{r location, echo = FALSE, fig.height=4}
+ggplot() +
+  geom_sf(data = lrf.sf, color = 'sienna3', size = 0.5) +
+  geom_sf(data = images.sf, fill = 'chartreuse3', color = 'chartreuse3', size = 1, shape = 24) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+```
+
+**Figure 1. LRF GPS location compared to GPS location from image exif.** The locations of the LRF GPS are depicted as orange dot, and the locations where images were taken by the drone are depicted as green triangles.  
+
+\newpage
+
+## Comparison of Altitude Values
+
+```{r altitude, echo=FALSE}
+ggplot() + 
+  geom_point(data = lrf %>% mutate(gps_dt = gps_dt + offset), aes(gps_dt, laser_range_raw_m), colour = "sienna3", size = 0.2) + 
+  geom_point(data = images, aes(exif_image_dt, exif_relative_altitude_m), colour = "chartreuse3") + 
+  geom_point(data = images, aes(exif_image_dt, exif_altitude_m), colour = "navy") + 
+  xlim(min(lrf$gps_dt) + offset, max(lrf$gps_dt) + offset) +
+  labs(x = "Date/time", y = "Relative altitude / LRF range (m)")
+```
+
+**Figure 2. LRF range (m) compared to relative altitude (m) from image exif.** The range recorded by the laser rangefinder is displayed as orange dots, the relative altitude recorded to each image is displayed as a green dot, and the GPS altitude recorded to each image is displayed as a blue dot.      
+
+\newpage
+
+## Comparison of Pitch Values
+
+```{r pitch, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf %>% mutate(gps_dt = gps_dt + offset), aes(gps_dt, imu_pitch), colour = "sienna3") + 
+  geom_point(data = images, aes(exif_image_dt, exif_gimbal_pitch), colour = "chartreuse3") +
+  geom_point(data = images, aes(exif_image_dt, exif_pitch), colour = "navy") + 
+  xlim(min(lrf$gps_dt) + offset, max(lrf$gps_dt) + offset) +
+  labs(x = "Date/time", y = "Pitch (degrees)")
+
+```
+
+**Figure 3. LRF pitch (degrees) compared to pitch (degrees) from image exif.** The pitch recorded by the laser rangefinder is displayed as orange dots, the gimbal pitch recorded to each image is displayed as a green dot, and the drone pitch recorded to each image is displayed as a blue dot.   
+
+\newpage 
+
+## Comparison of Roll Value
+
+```{r roll, echo=FALSE}
+ggplot() + 
+  geom_line(data = lrf %>% mutate(gps_dt = gps_dt + offset), aes(gps_dt, imu_roll), colour = "sienna3") + 
+  geom_point(data = images, aes(exif_image_dt, exif_gimbal_roll), colour = "chartreuse3") +
+  geom_point(data = images, aes(exif_image_dt, exif_roll), colour = "navy") + 
+  xlim(min(lrf$gps_dt) + offset, max(lrf$gps_dt) + offset) +
+  labs(x = "Date/time", y = "Roll (degrees)")
+```
+
+**Figure 4. LRF roll (degrees) compared to roll (degrees) from image exif.** The roll recorded by the laser rangefinder is displayed as orange dots, the gimbal roll recorded to each image is displayed as a green dot, and the drone roll recorded to each image is displayed as a blue dot.
