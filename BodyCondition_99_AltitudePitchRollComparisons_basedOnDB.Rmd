@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_Dyson_20220421_fl02.pdf')) 
+    output_file = file.path(dirname(inputFile), 'DataSummary_WRC_20220525_fl04.pdf')) 
   })
 
 ---
@@ -23,14 +23,15 @@ library(RPostgreSQL)
 library(sf)
 
 ## IMPORTANT: SET VARIABLES!!!!
-flight_date <- '2022-04-21'
-flight_number <- 'fl02'
-lrf_file_name <- 'Dyson_20220421_fl02_lrf.csv'
+flight_date <- '2022-05-25'
+flight_number <- 'fl04'
+lrf_file_name <- 'wrc_20220525_fl04_lrf.csv'
 offset_minutes <- # positive is the time that the LRF is behind the image timestamp; negative is the time the LRF is ahead of the image timestamp
-  # 0 # for 4/16/2022 data and all other flights
-  -60 # for 4/21/2022 data
-  # 60 # for 4/22/2022 data
-
+  0 # for 4/16/2022 data and all other flights
+  # -60 # for 4/21/2022 data
+  # 60 # for 4/22/2022 data, 5/25/2022 fl01 data
+lrf_name <- 'SA'
+drone_name <- '(placeholder)'
 
 # Connect to DB and get starting data
 con <- RPostgreSQL::dbConnect(PostgreSQL(), 
@@ -50,13 +51,13 @@ images <- RPostgreSQL::dbGetQuery(con, paste("SELECT image_name, exif_image_dt, 
 images.sf <- sf::st_as_sf(images, coords = c("exif_longitude", "exif_latitude"), crs = st_crs(4326))
 
 # Import LRF data
-lrf <- RPostgreSQL::dbGetQuery(con, paste("SELECT lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, imu_pitch, imu_roll, gps_speed, gps_latitude, gps_longitude FROM body_condition.geo_lrf_feed WHERE lrf_file_name = \'", lrf_file_name, "\'", sep = ""))
+lrf <- RPostgreSQL::dbGetQuery(con, paste("SELECT lrf_file_name, gps_dt, laser_range_raw_m, laser_range_median, imu_pitch, imu_roll, gps_speed, gps_latitude, gps_longitude FROM body_condition.geo_lrf_feed WHERE lrf_file_name = \'", lrf_file_name, "\'", sep = "")) 
 
 lrf.sf <- lrf %>% filter(gps_latitude != -99)
 lrf.sf <- sf::st_as_sf(lrf.sf, coords = c("gps_longitude", "gps_latitude"), crs = st_crs(4326))
 ```
 ## Introduction
-The purpose of this document is to present a comparison of data streams recorded by the drone and by the associated laser rangefinder during a UAS flight. The data in this report were collected on **`r flight_date`** on **flight `r flight_number`**. Images were collected using the **(placeholder) drone**, and laser rangefinder (LRF) data were collected using **LRF (placeholder)**. Exif data are only available when images were taken, and up to 5 values were recorded per second by the LRF. The data presented here are reflective of the timestamp recorded to the image's exif data, and an offset of **`r offset_minutes` minutes** applied to the LRF data.
+The purpose of this document is to present a comparison of data streams recorded by the drone and by the associated laser rangefinder during a UAS flight. The data in this report were collected on **`r flight_date`** on **flight `r flight_number`**. Images were collected using the **`r drone_name` drone**, and laser rangefinder (LRF) data were collected using **LRF `r lrf_name`**. Exif data are only available when images were taken, and up to 5 values were recorded per second by the LRF. The data presented here are reflective of the timestamp recorded to the image's exif data, and an offset of **`r offset_minutes` minutes** applied to the LRF data.
 
 ## Comparison of Location Data
 ```{r location, echo = FALSE, fig.height=4}
