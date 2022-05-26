@@ -2,11 +2,11 @@
 
 # Set variables -------------------
 wd <- "\\\\nmfs\\akc-nmml\\Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022"
-date_folder <- "2022-04-16"
-image_prefix <- "Dyson"
+date_folder <- "2022_05_25"
+image_prefix <- "wrc"
 
-process <- "copy+rename"
-#process <- "rename_only"
+#process <- "copy+rename"
+process <- "rename_only"
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -28,7 +28,9 @@ install_pkg("stringr")
 path <- paste(wd, date_folder, "Images", sep = "//")
 setwd(path)
       
-flights <- list.dirs(path, full.names = FALSE, recursive = FALSE)
+flights <- list.dirs(path, full.names = FALSE, 
+                     recursive = FALSE) # use most of the time
+                     # recursive = TRUE)  # use when images are split into camera folders within flight
 flights <- flights[grep("fl", flights)]
 
 tags <- c("SourceFile", "FileName", "DateTimeOriginal")
@@ -38,7 +40,7 @@ exif$flight <- ''
 exif <- data.frame(exif[0, c(1:4)], stringsAsFactors = FALSE)
 
 for (i in 1:length(flights)){
-  images <- list.files(flights[i], pattern = "jpg$|JPG$|dng$|DNG$", full.names = TRUE, recursive = FALSE)
+  images <- list.files(flights[i], pattern = "jpg$|JPG$|dng$|DNG$", full.names = TRUE, recursive = TRUE)
   temp_exif <- exifr::read_exif(images, tags = tags) %>%
     mutate(flight = flights[i])
   exif <- bind_rows(exif, temp_exif)
@@ -56,7 +58,7 @@ for (i in 2:nrow(exif)) {
 }
 
 exif <- exif %>%
-  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
+  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "_", ""), "_", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
   select(SourceFile, FileName, NewName) 
 
 for (i in 1:nrow(exif)){
