@@ -42,7 +42,7 @@ imported <- RPostgreSQL::dbGetQuery(con, "SELECT DISTINCT lrf_file_name FROM bod
 for (y in 1:length(years)) {
   # Create list of camera folders within which data need to be processed 
   dir <- list.dirs(paste(wd, years[y], sep = "/"), full.names = TRUE, recursive = FALSE)
-  dir <- data.frame(path = dir[grep("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", dir)], stringsAsFactors = FALSE) 
+  dir <- data.frame(path = dir[grep("[0-9][0-9][0-9][0-9]_[0-9][0-9]_[0-9][0-9]$", dir)], stringsAsFactors = FALSE) 
   dir <- dir %>%
     mutate(path = paste(path, 'LRF_data', sep = "/"))
   
