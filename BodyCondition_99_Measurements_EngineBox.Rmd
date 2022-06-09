@@ -1,0 +1,284 @@
+---
+title: 'UAS Body Condition: Engine Box Length Comparisons'
+date: "6/9/2022"
+output: pdf_document
+
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(
+    inputFile, 
+    encoding = encoding, 
+    output_file = file.path(dirname(inputFile), 'DataSummary_EngineBoxLengthMeasurements_20220609.pdf')) 
+  })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE) 
+
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(RPostgreSQL)
+library(reshape2)
+library(RColorBrewer)
+
+# Connect to DB and get starting data
+con <- RPostgreSQL::dbConnect(PostgreSQL(), 
+                              dbname = Sys.getenv("pep_db"), 
+                              host = Sys.getenv("pep_ip"), 
+                              port = Sys.getenv("pep_port"),
+                              user = Sys.getenv("pep_user"), 
+                              password = Sys.getenv("user_pw"))
+
+# Get data from DB
+data <- measurements <- RPostgreSQL::dbGetQuery(con, "SELECT * FROM body_condition.tbl_measurements_converted_enginebox WHERE image_name LIKE \'%fl02%\'") %>%
+  rename(exif_altitude = measurement_based_on_exif_alt_cm,
+         relative_altitude = measurement_based_on_rel_alt_cm,
+         lrf_range = measurement_based_on_lrf_range_cm,
+         lrf_adjusted_imu = measurement_based_on_lrf_adj_range_imu_cm,
+         lrf_adjusted_exif = measurement_based_on_lrf_adj_range_exif_cm) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 10 & exif_relative_altitude_m < 20, "050ft", "UNK")) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 20 & exif_relative_altitude_m < 25, "075ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 28 & exif_relative_altitude_m < 33, "100ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 35 & exif_relative_altitude_m < 40, "125ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 43 & exif_relative_altitude_m < 48, "150ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 59 & exif_relative_altitude_m < 64, "200ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 74 & exif_relative_altitude_m < 80, "250ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 90 & exif_relative_altitude_m < 95, "300ft", altitude)) %>%
+  mutate(altitude = ifelse(exif_relative_altitude_m > 104 & exif_relative_altitude_m < 108, "350ft", altitude))
+
+pixels <- data %>%
+  select(image_name, altitude, measured_by, measurement_comments, pixels_counted) %>%
+  melt(id.vars = c("image_name", "altitude", "measured_by", "measurement_comments")) %>%
+  mutate(grouping = paste(measured_by, measurement_comments, sep = "_")) %>%
+  unique()
+
+measurements_all <- data %>%
+  select(image_name, altitude, measured_by, measurement_comments,
+         exif_altitude, 
+         relative_altitude, 
+         lrf_range, 
+         lrf_adjusted_imu, 
+         lrf_adjusted_exif) %>%
+  melt(id.vars = c("image_name", "altitude", "measured_by", "measurement_comments")) %>%
+  mutate(grouping = paste(measured_by, measurement_comments, sep = "_")) %>%
+  unique()
+
+measurements <- data %>%
+  select(image_name, altitude, measured_by, measurement_comments,
+         #exif_altitude, 
+         relative_altitude, 
+         lrf_range, 
+         #lrf_adjusted_imu, 
+         lrf_adjusted_exif) %>%
+  melt(id.vars = c("image_name", "altitude", "measured_by", "measurement_comments")) %>%
+  mutate(grouping = paste(measured_by, measurement_comments, sep = "_")) %>%
+  unique()
+
+```
+## Introduction
+The purpose of this document is to present a comparison of the pixel counts and extrapolated measurements of the engine box length. Images were taken of an object of known length (an engine box on the ground) from a drone at several altitudes: 50ft, 75ft, 100ft, 125ft, 150ft, 200ft, 250ft, 300ft, and 350ft. Images were reviewed to select 3 images from each altitude that would be used for measuring the object. Pixels were counted by two reviewers, and each reviewer completed their counts using two different software options: ImageJ and Photoshop. Pixel counts were recorded in the database, and this information was used in conjunction with several ground sampling distances to generate an estimate for the engine box length. The following ground sampling distances were used for generating measurements:    
+
+  * **exif_altitude**: calculated based on the GPS altitude field in the image exif.
+  * **relative_altitude**: calculated based on the relative altitude field in the image exif.
+  * **lrf_range**: calculated based on the LRF range.
+  * **lrf_adjusted_imu**: calculated based on the LRF adjusted range (which was generated based on the conversion calculations provided by Ben and the IMU pitch and roll values).
+  * **lrf_adjusted_exif**: calculated based on the LRF adjusted range (which was generated based on the conversion calculations provided by Ben and the pitch and roll values recorded to the image exif).
+
+\newpage
+
+## Comparison of Pixel Counts
+The figure below depicts the number of pixels counted by each reviewer and the software they used for each images. The counts are separated into groups based on the target altitude at which the images were taken.
+
+```{r pixel_count, echo = FALSE}
+ggplot(data = pixels, aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  facet_grid(cols = vars(altitude)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Pixels Counted") +
+  theme(legend.position = "none") +
+  ggtitle("Number of Pixels Counted for Each Image")
+```
+
+\newpage
+
+## Comparison of Engine Box Lengths
+The figures below represent the calculated engine box lengths using pixel counts and the various ground sampling distances generated listed in the Introduction. The black line in each of the figures represents the true measurement of the engine box length. The measurements are colored based on the associated image. And the number of measurements associated with the LRF ranges are inflated because there are up to 5 LRF values associated with the time at which each image was taken.
+
+The immediate figure below displays the measurements returned using all the different ground sampling distance options. Generally, the exif altitude underestimated the engine box length, and the adjusted LRF range using IMU pitch and roll was inaccurate due to fluctuations in the pitch and roll values. The first figure below is included to highlight these differences, but all subsequent figures only displays the results using the relative altitude, the LRF range (unadjusted) and the LRF range (adjusted using the pitch and roll recorded to the exif in the reviewed image) -- all of which overestimated the engine box length. I have not reviewed this quantitatively, but it appears that the magnitude of the overestimate decreases as the drone altitude increases.
+
+```{r altitude_50ft_all, echo = FALSE}
+ggplot(data = measurements_all %>% filter(altitude == "050ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 50ft)")
+```
+
+\newpage
+
+### 50 ft 
+
+```{r altitude_50ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "050ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 50ft)")
+```
+
+\newpage
+
+### 75 ft 
+
+```{r altitude_75ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "075ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 75ft)")
+```
+
+\newpage
+
+### 100 ft 
+
+```{r altitude_100ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "100ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 100ft)")
+```
+
+\newpage
+
+### 125 ft 
+
+```{r altitude_125ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "125ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 125ft)")
+```
+
+\newpage
+
+### 150 ft 
+
+```{r altitude_150ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "150ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 150ft)")
+```
+
+\newpage
+
+### 200 ft 
+
+```{r altitude_200ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "200ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 200ft)")
+```
+
+\newpage
+
+### 250 ft
+For this (and subsequent) figures, there are few or no LRF ranges available. This particular LRF unit did not record ranges greater than ~80 m.
+
+```{r altitude_250ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "250ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 250ft)")
+```
+
+\newpage
+
+### 300 ft 
+
+```{r altitude_300ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "300ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 300ft)")
+```
+
+\newpage
+
+### 350 ft 
+
+```{r altitude_350ft, echo = FALSE}
+ggplot(data = measurements %>% filter(altitude == "350ft"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(variable)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.justification = "left") +
+  guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  ggtitle("Engine Box Length (from images taken at 350ft)")
+```
