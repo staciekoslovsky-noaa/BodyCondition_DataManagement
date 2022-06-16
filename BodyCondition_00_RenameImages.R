@@ -1,12 +1,12 @@
 # Rename UAS body condition images 
 
 # Set variables -------------------
-wd <- "\\\\nmfs\\akc-nmml\\Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022"
-date_folder <- "2022_05_25"
-image_prefix <- "wrc"
+wd <- "D:\\"
+date_folder <- "2022-06-15"
+image_prefix <- "aslc"
 
-#process <- "copy+rename"
-process <- "rename_only"
+process <- "move+rename"
+#process <- "rename_only"
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -35,7 +35,7 @@ flights <- flights[grep("fl", flights)]
 
 tags <- c("SourceFile", "FileName", "DateTimeOriginal")
 
-exif <- exifr::read_exif("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\test_exif_DO_NOT_DELETE.JPG", tags = tags)
+exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE.JPG", sep = ""), tags = tags)
 exif$flight <- ''
 exif <- data.frame(exif[0, c(1:4)], stringsAsFactors = FALSE)
 
@@ -58,15 +58,15 @@ for (i in 2:nrow(exif)) {
 }
 
 exif <- exif %>%
-  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "_", ""), "_", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
-  select(SourceFile, FileName, NewName) 
+  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
+  select(SourceFile, FileName, NewName, flight)
 
 for (i in 1:nrow(exif)){
-  if (process == "copy+rename") {
-    file.copy(exif$SourceFile[i], path)
-    file.rename(exif$FileName[i], exif$NewName[i])
-  } else if (process == "rename_only")
+  if (process == "move+rename") {
     file.rename(exif$SourceFile[i], exif$NewName[i])
+  } else if (process == "rename_only") {
+    file.rename(exif$SourceFile[i], paste(exif$flight[i], exif$NewName[i], sep = "//"))
+  }
 }
 
 write.table(exif, paste(path, "\\_RenamedImages_From", date_folder, ".csv", sep = ""), sep = ",", row.names = FALSE)
