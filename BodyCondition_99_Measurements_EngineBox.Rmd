@@ -7,7 +7,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_EngineBoxLengthMeasurements_20220609.pdf')) 
+    output_file = file.path(dirname(inputFile), 'DataSummary_EngineBoxLengthMeasurements_20220609c.pdf')) 
   })
 ---
 
@@ -44,7 +44,7 @@ data <- measurements <- RPostgreSQL::dbGetQuery(con, "SELECT * FROM body_conditi
   mutate(altitude = ifelse(exif_relative_altitude_m > 59 & exif_relative_altitude_m < 64, "200ft", altitude)) %>%
   mutate(altitude = ifelse(exif_relative_altitude_m > 74 & exif_relative_altitude_m < 80, "250ft", altitude)) %>%
   mutate(altitude = ifelse(exif_relative_altitude_m > 90 & exif_relative_altitude_m < 95, "300ft", altitude)) %>%
-  mutate(altitude = ifelse(exif_relative_altitude_m > 104 & exif_relative_altitude_m < 108, "350ft", altitude))
+  mutate(altitude = ifelse(exif_relative_altitude_m > 104 & exif_relative_altitude_m < 108, "350ft", altitude)) 
 
 pixels <- data %>%
   select(image_name, altitude, measured_by, measurement_comments, pixels_counted) %>%
@@ -61,7 +61,8 @@ measurements_all <- data %>%
          lrf_adjusted_exif) %>%
   melt(id.vars = c("image_name", "altitude", "measured_by", "measurement_comments")) %>%
   mutate(grouping = paste(measured_by, measurement_comments, sep = "_")) %>%
-  unique()
+  unique() %>%
+  mutate(error = (value - 172.2438) / 172.2438)
 
 measurements <- data %>%
   select(image_name, altitude, measured_by, measurement_comments,
@@ -72,7 +73,8 @@ measurements <- data %>%
          lrf_adjusted_exif) %>%
   melt(id.vars = c("image_name", "altitude", "measured_by", "measurement_comments")) %>%
   mutate(grouping = paste(measured_by, measurement_comments, sep = "_")) %>%
-  unique()
+  unique() %>%
+  mutate(error = (value - 172.2438) / 172.2438)
 
 ```
 ## Introduction
@@ -87,7 +89,7 @@ The purpose of this document is to present a comparison of the pixel counts and 
 \newpage
 
 ## Comparison of Pixel Counts
-The figure below depicts the number of pixels counted by each reviewer and the software they used for each images. The counts are separated into groups based on the target altitude at which the images were taken.
+The figure below depicts the number of pixels counted by each reviewer and the software they used for each images. The counts are separated into groups based on the target altitude at which the images were taken. The colors represent the individual images reviewed.
 
 ```{r pixel_count, echo = FALSE}
 ggplot(data = pixels, aes(x = grouping, y = value, fill = image_name)) + 
@@ -281,4 +283,62 @@ ggplot(data = measurements %>% filter(altitude == "350ft"), aes(x = grouping, y 
         legend.justification = "left") +
   guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
   ggtitle("Engine Box Length (from images taken at 350ft)")
+```
+
+\newpage
+
+### Measurements using LRF range
+```{r by_lrf_range, echo = FALSE}
+ggplot(data = measurements %>% filter(variable == "lrf_range"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(altitude)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Pixels Counted") +
+  theme(legend.position = "none") +
+  ggtitle("LRF Range for Each Image at Each Altitude")
+```
+
+\newpage
+
+### Measurements using LRF adjusted range using pitch and roll values from image exif data
+
+```{r by_lrf_adjusted_exif, echo = FALSE}
+ggplot(data = measurements %>% filter(variable == "lrf_adjusted_exif"), aes(x = grouping, y = value, fill = image_name)) + 
+  geom_col(position = position_dodge2(preserve = "single")) +
+  geom_hline(yintercept = 172.2438) +
+  facet_grid(cols = vars(altitude)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "Pixels Counted") +
+  theme(legend.position = "none") +
+  ggtitle("LRF Adjusted Range (using exif values) for Each Image at Each Altitude")
+```
+
+\newpage
+
+## Error Evaluation
+The figures below depict the percent error for each engine box length as measured by each reviewer and the software they used for each images. Error was calculated as (image_measurement - true_measurement) / true_measurement. The counts are separated into groups based on the target altitude at which the images were taken. The colors represent the individual images reviewed.
+
+```{r error_lrf_range, echo = FALSE}
+ggplot(data = measurements %>% filter(variable == "lrf_range"), aes(x = grouping, y = error, color = image_name)) + 
+  geom_point() +
+  #geom_col(position = position_dodge2(preserve = "single")) +
+  facet_grid(cols = vars(altitude)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "% error") +
+  theme(legend.position = "none") +
+  ggtitle("% Error of LRF Range for Each Image at Each Altitude")
+```
+
+\newpage
+
+```{r error_lrf_adjusted, echo = FALSE}
+ggplot(data = measurements %>% filter(variable == "lrf_adjusted_exif"), aes(x = grouping, y = error, color = image_name)) + 
+  geom_point() +
+  #geom_col(position = position_dodge2(preserve = "single")) +
+  facet_grid(cols = vars(altitude)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "Measurement Details: by whom and using what software", y = "% error") +
+  theme(legend.position = "none") +
+  ggtitle("% Error of LRF Adjusted Range (using exif values) for Each Image at Each Altitude")
 ```
