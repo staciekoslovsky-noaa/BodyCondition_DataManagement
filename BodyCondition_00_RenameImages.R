@@ -2,7 +2,7 @@
 
 # Set variables -------------------
 wd <- "D:\\"
-date_folder <- "2022-06-15"
+date_folder <- "2022-06-16"
 image_prefix <- "aslc"
 
 process <- "move+rename"

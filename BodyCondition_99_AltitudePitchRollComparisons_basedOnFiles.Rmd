@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_ALSC_20220615_fl02.pdf'))
+    output_file = file.path(dirname(inputFile), 'DataSummary_ALSC_20220616_fl04.pdf'))
   })
 
 ---
@@ -22,15 +22,16 @@ library(lubridate)
 library(sf)
 
 ## IMPORTANT - SET VARIABLES!!!!
-flight_date <- '2022-06-15'
-flight_number <- 'fl02'
+######## Update output file name above
+flight_date <- '2022-06-16'
+flight_number <- 'fl04'
 uas_nickname <- 'M2EA'
-lrf_name <- 'FC'
-offset_seconds <- -9 ## INDICATE positive or negative according to details on datasheet
-images_folder <- 'D:\\2022-06-15\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-lrf_file_path <- 'D:\\2022-06-15\\LRF_data\\aslc_20220615_fl02_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-takeoff_dt <- '2022-06-15 19:09:00' ## Enter 00 for seconds
-landing_dt <- '2022-06-15 19:24:59' ## Enter 59 for seconds
+lrf_name <- 'FB'
+offset_seconds <- 0 ## INDICATE positive or negative according to details on datasheet
+images_folder <- 'D:\\2022-06-16\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+lrf_file_path <- 'D:\\2022-06-16\\LRF_data\\aslc_20220616_fl04_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+takeoff_dt <- '2022-06-16 18:14:00' ## Enter 00 for seconds
+landing_dt <- '2022-06-16 18:33:59' ## Enter 59 for seconds
 
 # Process takeoff and landing date/times
 takeoff_dt <- ymd_hms(as.POSIXct(takeoff_dt, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"), tz = "UTC")
@@ -103,9 +104,9 @@ lrf <- lrf %>%
          imu_roll = as.numeric(imu_roll)) %>%
   filter(!is.na(gps_dt)) %>%
   select(gps_dt, laser_range_raw_m, laser_range_median, gps_latitude, gps_longitude, imu_pitch, imu_roll) %>%
-  filter(gps_dt >= takeoff_dt & gps_dt <= landing_dt)
+  filter(gps_dt >= takeoff_dt & gps_dt <= landing_dt) 
 
-lrf.sf <- lrf %>% filter(gps_latitude != -99)
+lrf.sf <- lrf %>% filter(gps_latitude != -99 & abs(gps_latitude) <= 180 & abs(gps_longitude) <= 180)
 lrf.sf <- sf::st_as_sf(lrf.sf, coords = c("gps_longitude", "gps_latitude"), crs = st_crs(4326))
 ```
 ## Introduction
