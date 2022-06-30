@@ -3,7 +3,8 @@
 
 # Set Working Variables
 wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Data"
-years <- c(2021, 2022)
+years <- c(#2021, 
+  2022)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -49,7 +50,7 @@ for (y in 1:length(years)) {
   for (i in 1:nrow(dir)){
     if(!dir.exists(dir$path[i])) next 
     files <- list.files(dir$path[i], full.names = TRUE, recursive = FALSE)
-    files <- data.frame(path = files, stringsAsFactors = FALSE)
+    files <- data.frame(path = files[grep("csv", files)], stringsAsFactors = FALSE)
     files <- files %>%
       mutate(file_name = basename(path))
     
@@ -117,14 +118,14 @@ for (y in 1:length(years)) {
                                                          -(as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60),
                                                          as.numeric(stringr::str_sub(gps_lon, 1, 3)) + as.numeric(stringr::str_sub(gps_lon, -nchar(gps_lon) + 3, -1))/60)), 9),
                  gps_speed = as.numeric(gps_speed),
-                 imu_pitch = as.numeric(imu_pitch),
-                 imu_roll = as.numeric(imu_roll),
-                 raw_gyro_x = as.numeric(raw_gyro_x),
-                 raw_gyro_y = as.numeric(raw_gyro_y),
-                 raw_gyro_z = as.numeric(raw_gyro_z),
-                 raw_accel_x = as.numeric(raw_accel_x),
-                 raw_accel_y = as.numeric(raw_accel_y),
-                 raw_accel_z = as.numeric(raw_accel_z),
+                 imu_pitch = round(as.numeric(imu_pitch), 9),
+                 imu_roll = round(as.numeric(imu_roll), 9),
+                 raw_gyro_x = round(as.numeric(raw_gyro_x), 9),
+                 raw_gyro_y = round(as.numeric(raw_gyro_y), 9),
+                 raw_gyro_z = round(as.numeric(raw_gyro_z), 9),
+                 raw_accel_x = round(as.numeric(raw_accel_x), 9),
+                 raw_accel_y = round(as.numeric(raw_accel_y), 9),
+                 raw_accel_z = round(as.numeric(raw_accel_z), 9),
                  qa_status_lku = 'U',
                  geom = "0101000020E610000000000000000000000000000000000000") %>%
           # Set numeric NA values to -99
