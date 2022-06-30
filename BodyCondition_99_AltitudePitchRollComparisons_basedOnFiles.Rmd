@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_ALSC_20220616_fl04.pdf'))
+    output_file = file.path(dirname(inputFile), 'DataSummary_ASLC_20220618_fl03_fieldPrelim.pdf'))
   })
 
 ---
@@ -23,15 +23,15 @@ library(sf)
 
 ## IMPORTANT - SET VARIABLES!!!!
 ######## Update output file name above
-flight_date <- '2022-06-16'
-flight_number <- 'fl04'
+flight_date <- '2022-06-18'
+flight_number <- 'fl03'
 uas_nickname <- 'M2EA'
 lrf_name <- 'FB'
-offset_seconds <- 0 ## INDICATE positive or negative according to details on datasheet
-images_folder <- 'D:\\2022-06-16\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-lrf_file_path <- 'D:\\2022-06-16\\LRF_data\\aslc_20220616_fl04_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-takeoff_dt <- '2022-06-16 18:14:00' ## Enter 00 for seconds
-landing_dt <- '2022-06-16 18:33:59' ## Enter 59 for seconds
+offset_seconds <- 1 ## INDICATE positive or negative according to details on datasheet
+images_folder <- 'D:\\2022-06-18\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+lrf_file_path <- 'D:\\2022-06-18\\LRF_data\\aslc_20220618_fl03_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+takeoff_dt <- '2022-06-18 20:03:00' ## Enter 00 for seconds
+landing_dt <- '2022-06-18 20:15:59' ## Enter 59 for seconds
 
 # Process takeoff and landing date/times
 takeoff_dt <- ymd_hms(as.POSIXct(takeoff_dt, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"), tz = "UTC")
@@ -132,7 +132,7 @@ ggplot() +
   geom_point(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, laser_range_raw_m), colour = "sienna3", size = 0.2) + 
   geom_point(data = images, aes(adjusted_image_dt, exif_relative_altitude_m), colour = "chartreuse3", size = 0.2) + 
   geom_point(data = images, aes(adjusted_image_dt, exif_altitude_m), colour = "navy", size = 0.2) + 
-  xlim(min(lrf$gps_dt), max(lrf$gps_dt)) +
+  xlim(takeoff_dt, landing_dt) +
   labs(x = "Date/time", y = "Relative altitude / LRF range (m)")
 ```
 
@@ -147,7 +147,7 @@ ggplot() +
   geom_line(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, imu_pitch), colour = "sienna3") + 
   geom_point(data = images, aes(adjusted_image_dt, exif_gimbal_pitch), colour = "chartreuse3", size = 0.2) +
   geom_point(data = images, aes(adjusted_image_dt, exif_pitch), colour = "navy", size = 0.2) + 
-  xlim(min(lrf$gps_dt), max(lrf$gps_dt)) +
+  xlim(takeoff_dt, landing_dt) +
   labs(x = "Date/time", y = "Pitch (degrees)")
 
 ```
@@ -163,7 +163,7 @@ ggplot() +
   geom_line(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, imu_roll), colour = "sienna3") + 
   geom_point(data = images, aes(adjusted_image_dt, exif_gimbal_roll), colour = "chartreuse3", size = 0.2) +
   geom_point(data = images, aes(adjusted_image_dt, exif_roll), colour = "navy", size = 0.2) + 
-  xlim(min(lrf$gps_dt), max(lrf$gps_dt)) +
+  xlim(takeoff_dt, landing_dt) +
   labs(x = "Date/time", y = "Roll (degrees)")
 ```
 
