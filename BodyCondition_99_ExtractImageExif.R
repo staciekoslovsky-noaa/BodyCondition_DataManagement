@@ -27,6 +27,8 @@ install_pkg("tidyverse")
 install_pkg("lubridate")
 install_pkg("exifr")
 install_pkg("stringr")
+install_pkg("dplyr")
+
 
 # Run code -------------------------------------------------------
 # Read exif data from images
