@@ -1,13 +1,13 @@
 ---
 title: 'UAS Body Condition: Engine Box Length Comparisons'
-date: "9/12/2022"
+date: "9/21/2022"
 output: pdf_document
 
 knit: (function(inputFile, encoding) { 
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_EngineBoxLengthMeasurements_rd2_20220912.pdf')) 
+    output_file = file.path(dirname(inputFile), 'DataSummary_EngineBoxLengthMeasurements_rd2_20220921.pdf')) 
   })
 ---
 
