@@ -2,11 +2,11 @@
 
 # Set variables -------------------
 wd <- "D:\\"
-date_folder <- "2022-06-17"
+date_folder <- "2022-09-21"
 image_prefix <- "aslc"
 
 process <- "move+rename"
-#process <- "rename_only"
+#process <- "rename_only" # keeps the images in the fl## folder -- will likely be rarely used as an option
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
