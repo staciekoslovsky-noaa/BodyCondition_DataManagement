@@ -8,6 +8,8 @@ image_prefix <- "aslc"
 process <- "move+rename"
 #process <- "rename_only" # keeps the images in the fl## folder -- will likely be rarely used as an option
 
+# NEED C:\\Strawberry installed before running
+
 # Create functions -----------------------------------------------
 # Function to install packages needed
 install_pkg <- function(x)

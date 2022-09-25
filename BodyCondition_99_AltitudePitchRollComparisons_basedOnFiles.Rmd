@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_ASLC_20220618_fl03_fieldPrelim.pdf'))
+    output_file = file.path(dirname(inputFile), 'DataSummary_ASLC_20220921_fl11_fieldPrelim.pdf'))
   })
 
 ---
@@ -23,15 +23,15 @@ library(sf)
 
 ## IMPORTANT - SET VARIABLES!!!!
 ######## Update output file name above
-flight_date <- '2022-06-18'
-flight_number <- 'fl03'
+flight_date <- '2022-09-21'
+flight_number <- 'fl11'
 uas_nickname <- 'M2EA'
 lrf_name <- 'FB'
-offset_seconds <- 1 ## INDICATE positive or negative according to details on datasheet
-images_folder <- 'D:\\2022-06-18\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-lrf_file_path <- 'D:\\2022-06-18\\LRF_data\\aslc_20220618_fl03_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-takeoff_dt <- '2022-06-18 20:03:00' ## Enter 00 for seconds
-landing_dt <- '2022-06-18 20:15:59' ## Enter 59 for seconds
+offset_seconds <- 0 ## INDICATE positive or negative according to details on datasheet
+images_folder <- 'E:\\2022-09-21\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+lrf_file_path <- 'E:\\2022-09-21\\LRF_data\\aslc_20220921_fl11_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+takeoff_dt <- '2022-09-21 21:47:00' ## Enter 00 for seconds
+landing_dt <- '2022-09-21 22:04:59' ## Enter 59 for seconds
 
 # Process takeoff and landing date/times
 takeoff_dt <- ymd_hms(as.POSIXct(takeoff_dt, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"), tz = "UTC")
@@ -144,7 +144,7 @@ ggplot() +
 
 ```{r pitch, echo=FALSE}
 ggplot() + 
-  geom_line(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, imu_pitch), colour = "sienna3") + 
+  #geom_line(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, imu_pitch), colour = "sienna3") + 
   geom_point(data = images, aes(adjusted_image_dt, exif_gimbal_pitch), colour = "chartreuse3", size = 0.2) +
   geom_point(data = images, aes(adjusted_image_dt, exif_pitch), colour = "navy", size = 0.2) + 
   xlim(takeoff_dt, landing_dt) +
@@ -152,7 +152,7 @@ ggplot() +
 
 ```
 
-**Figure 3. LRF pitch (degrees) compared to pitch (degrees) from image exif.** The pitch recorded by the laser rangefinder is displayed as orange dots, the gimbal pitch recorded to each image is displayed as a green dot, and the drone pitch recorded to each image is displayed as a blue dot.   
+**Figure 3. LRF pitch (degrees) compared to pitch (degrees) from image exif.** The pitch recorded by the laser rangefinder is displayed as orange dots, the gimbal pitch recorded to each image is displayed as a green dot, and the drone pitch recorded to each image is displayed as a blue dot. LRF pitch data have been intentionally excluded from this report figure, because of known issues in the quality of those data.
 
 \newpage 
 
@@ -160,11 +160,11 @@ ggplot() +
 
 ```{r roll, echo=FALSE}
 ggplot() + 
-  geom_line(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, imu_roll), colour = "sienna3") + 
+  # geom_line(data = lrf %>% mutate(gps_dt = gps_dt), aes(gps_dt, imu_roll), colour = "sienna3") + 
   geom_point(data = images, aes(adjusted_image_dt, exif_gimbal_roll), colour = "chartreuse3", size = 0.2) +
   geom_point(data = images, aes(adjusted_image_dt, exif_roll), colour = "navy", size = 0.2) + 
   xlim(takeoff_dt, landing_dt) +
   labs(x = "Date/time", y = "Roll (degrees)")
 ```
 
-**Figure 4. LRF roll (degrees) compared to roll (degrees) from image exif.** The roll recorded by the laser rangefinder is displayed as orange dots, the gimbal roll recorded to each image is displayed as a green dot, and the drone roll recorded to each image is displayed as a blue dot.
+**Figure 4. LRF roll (degrees) compared to roll (degrees) from image exif.** The roll recorded by the laser rangefinder is displayed as orange dots, the gimbal roll recorded to each image is displayed as a green dot, and the drone roll recorded to each image is displayed as a blue dot. LRF roll data have been intentionally excluded from this report figure, because of known issues in the quality of those data.
