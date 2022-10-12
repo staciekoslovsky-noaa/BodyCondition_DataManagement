@@ -1,9 +1,9 @@
 # UAS Body Condition: Read exif from images
 
 ## IMPORTANT - SET VARIABLES!!!!
-images_folder <- '\\\\nmfs\\akc-nmml\\Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2022\\2022-07-29_H33FlightTest\\M2EA_images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+images_folder <- 'D:\\2022-09-23\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
 export_folder <- 'C:\\skh' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-export_fileName <- 'imageExif_H33FlightTest_M2EA.csv'
+export_fileName <- 'imageExif_aslc_20220923.csv'
 
 offset_seconds <- 0
 
