@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_WRC_20220525_fl01.pdf')) 
+    output_file = file.path(dirname(inputFile), 'DataSummary_WRC_20221013_fl01.pdf')) 
   })
 
 ---
@@ -23,7 +23,7 @@ library(RPostgreSQL)
 library(sf)
 
 ## IMPORTANT: SET VARIABLES!!!!
-flight_date <- '2022-05-25'
+flight_date <- '2022-10-13'
 flight_number <- 'fl01'
 
 # Connect to DB and get starting data
