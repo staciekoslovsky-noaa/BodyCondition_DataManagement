@@ -1,4 +1,4 @@
 update body_condition.geo_images i
-set adjusted_image_dt = exif_image_dt + interval '1' second * (CASE WHEN exif2gps_offset_sec = 9999 THEN 0 ELSE drone2gps_offset_sec END)::numeric
+set adjusted_image_dt = exif_image_dt + interval '1' second * (CASE WHEN exif2gps_offset_sec = 9999 THEN 0 ELSE exif2gps_offset_sec END)::numeric
 from body_condition.tbl_flights f
 where f.id = i.flight_id
