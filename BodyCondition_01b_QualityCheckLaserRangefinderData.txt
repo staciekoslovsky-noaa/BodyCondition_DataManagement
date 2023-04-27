@@ -1,0 +1,93 @@
+--Reset QA/QC flags
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'U';
+
+--Remove records where values are before takeoff or after landing
+UPDATE body_condition.geo_lrf_feed l
+SET qa_status_lku = 'X_ba'
+FROM body_condition.tbl_flights f
+WHERE (gps_dt < flight_start_time OR gps_dt > flight_end_time)
+AND l.lrf_file_name = f.lrf_file_name
+AND qa_status_lku = 'U';
+
+--Remove records where values are too low to use
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'X_low'
+WHERE laser_range_raw_m < 5
+AND qa_status_lku = 'U';
+
+--Remove records with duplicate timestamps
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'X_dup'
+WHERE (lrf_file_name, gps_dt) IN 
+	(SELECT lrf_file_name, gps_dt
+	FROM body_condition.geo_lrf_feed
+	GROUP BY lrf_file_name, gps_dt
+	HAVING count(gps_dt) > 1)
+AND qa_status_lku = 'U';
+	
+--Remove records where the value is >10% away from the rolling median
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'X_median'
+WHERE id IN (
+	SELECT id
+	FROM (
+		SELECT id, l.lrf_file_name, l.gps_dt, l.laser_range_raw_m, laser_range_median, range_count
+		FROM (SELECT * FROM body_condition.geo_lrf_feed WHERE qa_status_lku::text NOT LIKE 'X%') l
+		RIGHT JOIN (
+			SELECT lrf_file_name, date_trunc('second'::text, geo_lrf_feed.gps_dt) AS gps_dt, COUNT(geo_lrf_feed.laser_range_raw_m) AS range_count
+			FROM body_condition.geo_lrf_feed
+			WHERE qa_status_lku::text NOT LIKE 'X%'
+			GROUP BY lrf_file_name, (date_trunc('second'::text, gps_dt))
+			--HAVING COUNT(geo_lrf_feed.laser_range_raw_m) = 1
+			) x
+		ON date_trunc('second'::text, l.gps_dt) = x.gps_dt
+	WHERE laser_range_raw_m < laser_range_median - (laser_range_median * 0.1) OR laser_range_raw_m > laser_range_median + (laser_range_median * 0.1)
+	) y
+	)
+AND qa_status_lku = 'U';
+
+--Remove records where the speed to AND from a LRF record is > 1.0 m/s
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'X_speed'
+WHERE id IN
+	(SELECT id
+	FROM (
+		SELECT  id, lrf_file_name, gps_dt, laser_range_raw_m,
+				lag(gps_dt) over (order by lrf_file_name, gps_dt) as prev_dt,
+				lag(laser_range_raw_m) over (order by lrf_file_name, gps_dt) as prev_range,
+				lead(gps_dt) over (order by lrf_file_name, gps_dt) as next_dt,
+				lead(laser_range_raw_m) over (order by lrf_file_name, gps_dt) as next_range
+		FROM body_condition.geo_lrf_feed
+		WHERE qa_status_lku NOT LIKE 'X%' 
+		) x
+	WHERE abs((laser_range_raw_m - prev_range) / (EXTRACT(EPOCH FROM (gps_dt - prev_dt)))) > 1 
+	AND abs((next_range - laser_range_raw_m) / (EXTRACT(EPOCH FROM (next_dt - gps_dt)))) > 1 )
+AND qa_status_lku = 'U';
+
+--Remove records where the range value is > 1 SD away from the mean value for the second
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'X_sd'
+WHERE id IN (
+	SELECT id
+	FROM (
+		SELECT id, l.lrf_file_name, l.gps_dt, l.laser_range_raw_m, laser_range_median, range_count, range_avg, range_stddev, range_min, range_max
+		FROM (SELECT * FROM body_condition.geo_lrf_feed WHERE qa_status_lku::text NOT LIKE 'X%') l
+		RIGHT JOIN (
+			SELECT lrf_file_name, date_trunc('second'::text, geo_lrf_feed.gps_dt) AS gps_dt, COUNT(geo_lrf_feed.laser_range_raw_m) AS range_count,
+				avg(laser_range_raw_m) AS range_avg, stddev(laser_range_raw_m) AS range_stddev, min(laser_range_raw_m) AS range_min, max(laser_range_raw_m) AS range_max
+			FROM body_condition.geo_lrf_feed
+			WHERE qa_status_lku::text NOT LIKE 'X%'
+			GROUP BY lrf_file_name, (date_trunc('second'::text, gps_dt))
+			HAVING COUNT(geo_lrf_feed.laser_range_raw_m) > 1) x
+		ON date_trunc('second'::text, l.gps_dt) = x.gps_dt AND l.lrf_file_name = x.lrf_file_name
+		WHERE range_stddev > 1 --OR laser_range_raw_m < range_avg - (range_stddev * 0.5) OR laser_range_raw_m > range_avg + (range_stddev * 0.5)
+	) y
+	)
+AND qa_status_lku = 'U';
+
+--Set remaining records to 'Use for analysis'
+UPDATE body_condition.geo_lrf_feed
+SET qa_status_lku = 'A'
+WHERE qa_status_lku = 'U';
+

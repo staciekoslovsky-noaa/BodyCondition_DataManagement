@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_WRC_20221013_fl01.pdf')) 
+    output_file = file.path(dirname(inputFile), 'DataSummary_Dyson_20220422_fl01.pdf')) 
   })
 
 ---
@@ -23,7 +23,7 @@ library(RPostgreSQL)
 library(sf)
 
 ## IMPORTANT: SET VARIABLES!!!!
-flight_date <- '2022-10-13'
+flight_date <- '2022-04-22'
 flight_number <- 'fl01'
 
 # Connect to DB and get starting data
@@ -31,8 +31,8 @@ con <- RPostgreSQL::dbConnect(PostgreSQL(),
                               dbname = Sys.getenv("pep_db"), 
                               host = Sys.getenv("pep_ip"), 
                               port = Sys.getenv("pep_port"),
-                              user = Sys.getenv("pep_user"), 
-                              password = Sys.getenv("user_pw"))
+                              user = Sys.getenv("pep_admin"), 
+                              password = Sys.getenv("admin_pw"))
 
 # Get data from DB
 images <- RPostgreSQL::dbGetQuery(con, paste("SELECT * FROM body_condition.summ4report_images WHERE flight_date_local = \'", flight_date, "\' AND flight_number = \'", flight_number, "\'", sep = ""))

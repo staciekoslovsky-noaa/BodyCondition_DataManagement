@@ -90,7 +90,8 @@ for (y in 1:length(years)) {
                                                                  "W_818pct_m",
                                                                  "W_909pct_m"), 
                          skip = 1, header = FALSE, stringsAsFactors = FALSE, blank.lines.skip = TRUE, colClasses = "character", dec = ".", fill = TRUE, strip.white = TRUE) %>%
-          mutate(measurement_file_name = files$file_name[j])
+          mutate(measurement_file_name = files$file_name[j]) %>%
+          mutate(length_name = toupper(length_name))
         
         temp_lw <- lw %>%
           select(length_name, length_px, measurement_file_name)
@@ -120,7 +121,8 @@ for (y in 1:length(years)) {
                  pixels_counted = length_px) %>%
           mutate(measured_by = sapply(strsplit(measurement_file_name, "_"), function(x) x[7]),
                  measurement_date = as.Date(sapply(strsplit(measurement_file_name, "_"), function(x) x[6]), format = "%Y%m%d")) %>%
-          select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name)
+          select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name) %>%
+          mutate(pixels_counted = ifelse(is.nan(pixels_counted), -99, pixels_counted))
       }
       
       if(grepl("areas", files$file_name[j], fixed = TRUE) == TRUE) {
@@ -144,7 +146,8 @@ for (y in 1:length(years)) {
                  pixels_counted = area_px) %>%
           mutate(measured_by = sapply(strsplit(measurement_file_name, "_"), function(x) x[7]),
                  measurement_date = as.Date(sapply(strsplit(measurement_file_name, "_"), function(x) x[6]), format = "%Y%m%d")) %>%
-          select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name)
+          select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name) %>%
+          mutate(pixels_counted = ifelse(is.nan(pixels_counted), -99, pixels_counted))
       }
       
       if(is.na(toDB$pixels_counted)) {

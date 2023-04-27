@@ -1,0 +1,215 @@
+---
+title: "LRF QA/QC Evaluation"
+author: "Stacie Koslovsky"
+format: pdf
+editor: visual
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE) 
+
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(RPostgreSQL)
+library(reshape2)
+library(RColorBrewer)
+
+# Connect to DB and get starting data
+con <- RPostgreSQL::dbConnect(PostgreSQL(), 
+                              dbname = Sys.getenv("pep_db"), 
+                              host = Sys.getenv("pep_ip"), 
+                              port = Sys.getenv("pep_port"),
+                              user = Sys.getenv("pep_admin"), 
+                              password = Sys.getenv("admin_pw"))
+
+lrf <- RPostgreSQL::dbGetQuery(con, "SELECT * FROM body_condition.geo_lrf_feed")
+
+RPostgreSQL::dbDisconnect(con)
+```
+
+```{r processing, include = FALSE}
+lrf_summary <- lrf %>%
+  mutate(gps_dt = as.POSIXct(strptime(gps_dt, format = "%Y-%m-%d %H:%M:%S"))) %>%
+  filter(qa_status_lku == 'A') %>%
+  select(lrf_file_name, gps_dt, laser_range_raw_m) %>%
+  group_by(lrf_file_name, gps_dt) %>%
+  mutate(mean_range = mean(laser_range_raw_m)) %>%
+  mutate(median_range = median(laser_range_raw_m))
+```
+
+```{r set_file_variable, include = FALSE}
+file = "ucsc_20210923_fl05_lrf.csv"
+
+qaqc <- lrf %>% 
+  filter(lrf_file_name == file) 
+
+use_for_analysis <- lrf_summary %>% 
+  filter(lrf_file_name == file) %>% 
+  mutate(diff = mean_range - median_range)
+
+```
+
+## Overview of QA/QC Steps
+
+This report is intended to step through the LRF data QA/QC process. The general steps for LRF QA/QC are applied in order as follows:
+
+1.  Remove records that are before the start of the flight and after the end of the flight. This is largely to help avoid double/triple/quadruple "reviewing" a file that contained LRF data from more than one flight (in cases where the LRF was not turned off between flights).
+
+2.  Remove records where the reported range is less than 5m. Through two separate reviews, Gavin and Stacie each landed on this criteria for removing records where the drone was still on the ground or the LRF was reporting spurious close readings during flight.
+
+3.  Remove records where there is a duplicate date/time (down to the decimal second). Since this appears as an LRF error (ranges are different and get up to 10 LRF readings per second), these records are removed from the dataset. In total, this removes \~300 records from a \>500,000 record dataset.
+
+4.  Remove records where the LRF range is greater than 10% more or less than the LRF median range. The LRF calculates and records a rolling median value based on the previous 38 readings (or one second of data). While this data stream also can have errors, they tend to be smoothed out based on the rolling calculation. This QA/QC check is particularly important for records where there is only one LRF reading left for the second after the prior QA/QC checks have been applied.
+
+5.  Remove records where the speed to AND from an individual LRF point is greater than 1 m/s. This essentially removes one-record blips in the LRF readings. And the speed is calculated on the records that remain *after* the prior QA/QC checks have been applied.
+
+6.  Finally, remove records where the standard deviation for all the values that remain for each second of LRF data is greater than 0.5. This removes all data from particular date/time where there is significant variation in the remaining LRF range values.
+
+\newpage
+
+## Stepping Through the QA/QC Steps for an LRF File
+
+To start, this figure presents all the LRF data imported into the database for file **`r file`**.
+
+```{r starting, echo = FALSE, fig.cap="LRF data without any QA/QC applied."}
+ggplot(data = qaqc, aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(color = 'darkslategrey', size = 1) 
+
+```
+
+\newpage
+
+
+The first QA/QC query applied to the data removes records where the LRF data are recorded before or after the flight start/end times. These records are highlighted in red. This QA/QC flag is only relevant for files that contain data from multiple flights.
+
+```{r X_ba, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red."}
+ggplot(data = qaqc %>% filter(qa_status_lku != 'X_ba'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(data = lrf %>% filter(lrf_file_name == file & qa_status_lku == 'X_ba'), color = 'darkred', size = 2) +
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+\newpage
+
+The second QA/QC query applied to the data removes records where the LRF ranges are reported as being less than 5m. These records are highlighted in orange.
+
+```{r X_low, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red and records less than 5m highlighted in orange."}
+ggplot(data = qaqc %>% filter(qa_status_lku != 'X_ba' & qa_status_lku != 'X_low'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_ba'), color = 'darkred', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_low'), color = 'darkorange', size = 2) +
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+\newpage
+
+The next QA/QC query applied to the data removes records where there are duplicate timestamps (down to the decimal second) from the dataset. These records are highlighted in yellow.
+
+```{r X_dup, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red, records less than 5m highlighted in orange, and records with duplicate date/time values in yellow."}
+ggplot(data = qaqc %>% filter(qa_status_lku != 'X_ba' 
+                              & qa_status_lku != 'X_low' 
+                              & qa_status_lku != 'X_dup'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_ba'), color = 'darkred', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_low'), color = 'darkorange', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_dup'), color = 'gold2', size = 3) +
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+\newpage
+
+The next QA/QC query applied to the data removes records where the reported range is \>10% more or less than the rolling median value. These records are highlighted in green.
+
+```{r X_median, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red, records less than 5m highlighted in orange, records with duplicate date/time values in yellow, and records that are >10% more or less than the rolling median highlighted in green."}
+ggplot(data = qaqc %>% filter(qa_status_lku != 'X_ba' 
+                              & qa_status_lku != 'X_low' 
+                              & qa_status_lku != 'X_dup'
+                              & qa_status_lku != 'X_median'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_ba'), color = 'darkred', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_low'), color = 'darkorange', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_dup'), color = 'gold2', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_median'), color = 'chartreuse3', size = 2) +
+
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+\newpage
+
+The next QA/QC query applied to the data removes records where the speed to and from record is greater than 1m/s. These records are highlighted in blue.
+
+```{r X_speed, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red, records less than 5m highlighted in orange, records with duplicate date/time values in yellow,  records that are >10% more or less than the rolling median highlighted in green, and records where the speed to and from the range value is > 1m/s highlighted in blue."}
+ggplot(data = qaqc %>% filter(qa_status_lku != 'X_ba'
+                              & qa_status_lku != 'X_low' 
+                              & qa_status_lku != 'X_dup'
+                              & qa_status_lku != 'X_median'
+                              & qa_status_lku != 'X_speed'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_ba'), color = 'darkred', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_low'), color = 'darkorange', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_dup'), color = 'gold2', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_median'), color = 'chartreuse3', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_speed'), color = 'deepskyblue3', size = 2) +
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+\newpage
+
+The final QA/QC query applied to the data removes records where the speed to and from record is greater than 1m/s. These records are highlighted in purple.
+
+```{r X_sd, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red, records less than 5m highlighted in orange, records with duplicate date/time values in yellow,  records that are >10% more or less than the rolling median highlighted in green, records where the speed to and from the range value is > 1m/s highlighted in blue, and records where the standard deviation for all the values that remain for each second of LRF data is greater than 0.5 highlighted in purple."}
+ggplot(data = qaqc %>% filter(qa_status_lku == 'A'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_ba'), color = 'darkred', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_low'), color = 'darkorange', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_dup'), color = 'gold2', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_median'), color = 'chartreuse3', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_speed'), color = 'deepskyblue3', size = 1) +
+  geom_point(data = qaqc %>% filter(qa_status_lku == 'X_sd'), color = 'darkorchid3', size = 2) +
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+
+\newpage
+
+The final LRF dataset for the **`r file`** file, excluding all records that were flagged during the previous QA/QC steps.
+
+```{r final_LRF, echo = FALSE, fig.cap="The final LRF dataset (all records flagged during QA/QC have been removed from this figure)."}
+ggplot(data = qaqc %>% filter(qa_status_lku == 'A'), aes(x = gps_dt, y = laser_range_raw_m)) + 
+  geom_point(color = 'darkslategrey', size = 1) 
+```
+
+
+\newpage
+
+## Comparison of Mean and Median Values by LRF Date/Time
+
+After the QA/QC is complete, the records *not* flagged by any of the QA/QC queries will be used to generate a single, consolidated range value for each second of the flight where there are "clean" range data available. This section of the report will provide information about how the representative range values compare when calculated using the mean and median.
+
+```{r useForAnalysis_1to1, echo = FALSE, fig.cap = "The mean range vs median range for each second for which there are data in the final LRF dataset."}
+ggplot(use_for_analysis, aes(x = mean_range, y = median_range)) + 
+  geom_point(aes(color = diff)) +
+  geom_abline(slope = 1, intercept = 0, color = 'darkorange')
+```
+
+```{r useForAnalysis_diff, echo = FALSE, fig.cap = "The different between the mean range and median range calculated for each second for which there are data in the final LRF dataset. Positive values mean the mean value was greater than the median value; negative values mean the median value was greater than the mean value."}
+ 
+ggplot(use_for_analysis, aes(x = gps_dt, y = diff)) + 
+  geom_col(position = 'identity', aes(color = laser_range_raw_m)) 
+
+## Earlier code when evaluating QA/QC methods
+# ggplot(data = outliers %\>% filter(survey_date == "aslc_20220923")) +
+  # geom_point(aes(x = gps_dt, y = laser_range_raw_m, color = filter_sd)) +
+  # facet_grid(cols = vars(lrf_file_name), scales = "free")
+
+# ggplot(data = outliers %\>% filter(lrf_file_name == "aslc_20220923_fl01_lrf.csv"
+  # \# )) +
+  # & filter_highRange == "KEEP")) +
+  # geom_point(aes(x = gps_dt, y = laser_range_raw_m, color = filter_highRange)) +
+  # facet_grid(cols = vars(lrf_file_name), scales = "free_x")
+
+# geom_line(yintercept = r) +
+  # facet_grid(cols = vars(lrf_file_name)) +
+  # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  # labs(x = "Measurement Details: by whom and using what software", y = "Engine box length (cm)") +
+  # theme(legend.title = element_blank(),
+  # legend.position = "bottom",
+  # legend.justification = "left") +
+  # guides(fill = guide_legend(nrow = 3,byrow = TRUE)) +
+  # ggtitle("Engine Box Length (from images taken at 75ft)")
+```
