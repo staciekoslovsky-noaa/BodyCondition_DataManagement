@@ -80,7 +80,6 @@ ggplot(data = qaqc, aes(x = gps_dt, y = laser_range_raw_m)) +
 
 \newpage
 
-
 The first QA/QC query applied to the data removes records where the LRF data are recorded before or after the flight start/end times. These records are highlighted in red. This QA/QC flag is only relevant for files that contain data from multiple flights.
 
 ```{r X_ba, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red."}
@@ -151,7 +150,7 @@ ggplot(data = qaqc %>% filter(qa_status_lku != 'X_ba'
 
 \newpage
 
-The final QA/QC query applied to the data removes records where the speed to and from record is greater than 1m/s. These records are highlighted in purple.
+The final QA/QC query applied to the data removes records where the standard deviation for all the values that remain for each second of LRF data is greater than 0.5. These records are highlighted in purple.
 
 ```{r X_sd, echo = FALSE, fig.cap="LRF data records from before/after the flight highlighted in red, records less than 5m highlighted in orange, records with duplicate date/time values in yellow,  records that are >10% more or less than the rolling median highlighted in green, records where the speed to and from the range value is > 1m/s highlighted in blue, and records where the standard deviation for all the values that remain for each second of LRF data is greater than 0.5 highlighted in purple."}
 ggplot(data = qaqc %>% filter(qa_status_lku == 'A'), aes(x = gps_dt, y = laser_range_raw_m)) + 
@@ -164,7 +163,6 @@ ggplot(data = qaqc %>% filter(qa_status_lku == 'A'), aes(x = gps_dt, y = laser_r
   geom_point(color = 'darkslategrey', size = 1) 
 ```
 
-
 \newpage
 
 The final LRF dataset for the **`r file`** file, excluding all records that were flagged during the previous QA/QC steps.
@@ -173,7 +171,6 @@ The final LRF dataset for the **`r file`** file, excluding all records that were
 ggplot(data = qaqc %>% filter(qa_status_lku == 'A'), aes(x = gps_dt, y = laser_range_raw_m)) + 
   geom_point(color = 'darkslategrey', size = 1) 
 ```
-
 
 \newpage
 
@@ -186,6 +183,8 @@ ggplot(use_for_analysis, aes(x = mean_range, y = median_range)) +
   geom_point(aes(color = diff)) +
   geom_abline(slope = 1, intercept = 0, color = 'darkorange')
 ```
+
+For each second in the data, a mean and median value for the final LRF range dataset. The difference between them was calculated as mean - median. The last figure shows the differences between those values for each second for the duration of the flight. Those differences are colored based on the average range value of the drone to help look for any patterns/differences based on the altitude. The overall point of the figure is to help show if there is any bias in mean vs. median.
 
 ```{r useForAnalysis_diff, echo = FALSE, fig.cap = "The different between the mean range and median range calculated for each second for which there are data in the final LRF dataset. Positive values mean the mean value was greater than the median value; negative values mean the median value was greater than the mean value."}
  
