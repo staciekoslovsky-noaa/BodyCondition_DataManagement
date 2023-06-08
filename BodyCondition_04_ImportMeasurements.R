@@ -150,7 +150,7 @@ for (y in 1:length(years)) {
           mutate(pixels_counted = ifelse(is.nan(pixels_counted), -99, pixels_counted))
       }
       
-      if(is.na(toDB$pixels_counted)) {
+      if(unique(is.na(toDB$pixels_counted)) == TRUE) {
         failed_to_import <- append(basename(files$path[j]), failed_to_import)
       } else {
         # Write data to the DB
