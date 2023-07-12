@@ -1,9 +1,9 @@
 # UAS Body Condition: Read exif from images
 
 ## IMPORTANT - SET VARIABLES!!!!
-images_folder <- 'C:\\skh\\2022-10-18_X_M2EAOffset' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+images_folder <- 'D:\\2023\\2023-07-11\\Images\\fl08' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
 export_folder <- 'C:\\skh' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-export_fileName <- 'imageExif_m2ea_20221018.csv'
+export_fileName <- 'imageExif_m30t_20230711_fl01.csv'
 
 offset_seconds <- 0
 
@@ -36,7 +36,9 @@ tags <- c("SourceFile", "FileName", "FileAccessDate", "DateTimeOriginal",
           "GPSLatitude", "GPSLongitude", "GPSAltitude", "RelativeAltitude",
           "FlightYawDegree", "FlightPitchDegree", "FlightRollDegree",
           "GimbalYawDegree", "GimbalPitchDegree", "GimbalRollDegree",
-          "LensInfo", "DigitalZoomRatio")
+          "LensInfo", "DigitalZoomRatio", "FocalLength", "FocalLengthIn35mmFormat", 
+          "ImageSource", "GpsStatus", "AltitudeType", "AbsoluteAltitude", "RelativeAltitude",
+          "LRFStatus", "LRFTargetDistance", "LRFTargetLon", "LRFTargetLat", "LRFTargetAlt", "LRFTargetAbsAlt")
 
 images2process <- list.files(images_folder, pattern = "jpg$|JPG$|dng$|DNG$", full.names = TRUE, recursive = FALSE)
 images2process <- data.frame(path = images2process, stringsAsFactors = FALSE)
