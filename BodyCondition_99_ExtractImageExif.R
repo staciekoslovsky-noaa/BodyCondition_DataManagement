@@ -1,13 +1,12 @@
 # UAS Body Condition: Read exif from images
 
 ## IMPORTANT - SET VARIABLES!!!!
-images_folder <- 'D:\\2023\\2023-07-11\\Images\\fl08' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-export_folder <- 'C:\\skh' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-export_fileName <- 'imageExif_m30t_20230711_fl01.csv'
+images_folder <- 'D:\\2023\\2023-07-11\\Images_TO_BE_RENAMED\\fl08' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+  #'\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\2023\\2023-06-29_X_M30Ttesting\\Images\\DJI_202306291933_002'
+export_folder <- 'C:\\smk' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+export_fileName <- 'imageExif_m30t_20230629_002.csv'
 
 offset_seconds <- 0
-
-
 
 
 
@@ -61,10 +60,28 @@ images <- images %>%
          exif_gimbal_heading = as.numeric(GimbalYawDegree),
          exif_gimbal_pitch = as.numeric(GimbalPitchDegree),
          exif_gimbal_roll = as.numeric(GimbalRollDegree)) %>%
+  rename(lens_info = LensInfo,
+         digital_zoom_ratio = DigitalZoomRatio,
+         focal_length = FocalLength,
+         focal_length_35mm = FocalLengthIn35mmFormat,
+         image_source = ImageSource,
+         gps_status = GpsStatus,
+         altitude_type = AltitudeType,
+         absolute_altitude = AbsoluteAltitude,
+         relative_altitude = RelativeAltitude,
+         lrf_status = LRFStatus,
+         lrf_target_distance_m = LRFTargetDistance,
+         lrf_target_latitude = LRFTargetLat,
+         lrf_target_longitude = LRFTargetLon,
+         lrf_target_altitude = LRFTargetAlt,
+         lrf_target_absolute_altitude = LRFTargetAbsAlt) %>%
   mutate(adjusted_image_dt = exif_image_dt + offset_seconds) %>%
   select(image_name, image_path,
+         image_source, lens_info, digital_zoom_ratio, focal_length, focal_length_35mm,
          exif_image_dt, adjusted_image_dt, exif_latitude, exif_longitude, exif_altitude_m, exif_relative_altitude_m,
          exif_heading, exif_pitch, exif_roll,
-         exif_gimbal_heading, exif_gimbal_pitch, exif_gimbal_roll)
+         exif_gimbal_heading, exif_gimbal_pitch, exif_gimbal_roll,
+         gps_status, altitude_type, absolute_altitude, relative_altitude,
+         lrf_status, lrf_target_distance_m, lrf_target_latitude, lrf_target_longitude, lrf_target_altitude, lrf_target_absolute_altitude)
 
 write.csv(images, paste(export_folder, export_fileName, sep = "\\"), row.names = FALSE)
