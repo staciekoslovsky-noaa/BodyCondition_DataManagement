@@ -1,6 +1,6 @@
 ---
 title: "UAS Body Condition: Comparison of Altitude/Range, Pitch and Roll from Drone and LRF Values"
-# author: "Stacie Hardy"
+# author: "Stacie Koslovsky"
 date: "Date Created: `r format(Sys.time(), '%m/%d/%Y')`"
 output: pdf_document
 
@@ -8,7 +8,7 @@ knit: (function(inputFile, encoding) {
   rmarkdown::render(
     inputFile, 
     encoding = encoding, 
-    output_file = file.path(dirname(inputFile), 'DataSummary_ASLC_20220921_fl11_fieldPrelim.pdf'))
+    output_file = file.path(dirname(inputFile), 'DataSummary_UCSC_20230712_fl06_fieldPrelim.pdf'))
   })
 
 ---
@@ -23,15 +23,15 @@ library(sf)
 
 ## IMPORTANT - SET VARIABLES!!!!
 ######## Update output file name above
-flight_date <- '2022-09-21'
-flight_number <- 'fl11'
+flight_date <- '2023-07-12'
+flight_number <- 'fl06'
 uas_nickname <- 'M2EA'
-lrf_name <- 'FB'
-offset_seconds <- 0 ## INDICATE positive or negative according to details on datasheet
-images_folder <- 'E:\\2022-09-21\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-lrf_file_path <- 'E:\\2022-09-21\\LRF_data\\aslc_20220921_fl11_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
-takeoff_dt <- '2022-09-21 21:47:00' ## Enter 00 for seconds
-landing_dt <- '2022-09-21 22:04:59' ## Enter 59 for seconds
+lrf_name <- 'FC'
+offset_seconds <- -67 ## INDICATE positive or negative according to details on datasheet
+images_folder <- 'F:\\2023\\2023-07-12\\Images' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+lrf_file_path <- 'F:\\2023\\2023-07-12\\LRF_data\\ucsc_20230712_fl06_lrf.csv' ## NEEDS TWO (2) BACKSLASHES BETWEEN FOLDER NAMES
+takeoff_dt <- '2023-07-12 19:34:00' ## Enter 00 for seconds
+landing_dt <- '2023-07-12 19:49:59' ## Enter 59 for seconds
 
 # Process takeoff and landing date/times
 takeoff_dt <- ymd_hms(as.POSIXct(takeoff_dt, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"), tz = "UTC")
