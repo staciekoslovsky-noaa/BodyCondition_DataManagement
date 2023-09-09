@@ -1,9 +1,9 @@
 # Rename UAS body condition images 
 
 # Set variables -------------------
-wd <- "C:/skh/"
-date_folder <- "2022-10-13"
-image_prefix <- "wrc"
+wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Data\\2023\\"
+date_folder <- "2023-07-13"
+image_prefix <- "ucsc"
 
 process <- "move+rename"
 #process <- "rename_only" # keeps the images in the fl## folder -- will likely be rarely used as an option
