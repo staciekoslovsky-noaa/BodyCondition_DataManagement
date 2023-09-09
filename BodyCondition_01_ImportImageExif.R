@@ -4,7 +4,8 @@
 # Set Working Variables
 wd <- "\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data"
 years <- c(#2021, 
-  2022)
+  #2022,
+  2023)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -101,9 +102,8 @@ for (y in 1:length(years)) {
                exif_gimbal_roll = as.numeric(GimbalRollDegree),
                exif_lens = LensInfo,
                exif_zoom_factor = as.numeric(DigitalZoomRatio),
-               for_calibration_lku = 'Q',
+               use_image_for_lku = 'XX',
                measurement_status_lku = 'Q',
-               use_for_model_lku = 'Q',
                exif_relative_altitude_m = RelativeAltitude,
                file_access_dt = format(lubridate::ymd_hms(FileAccessDate, tz = "America/Vancouver"), tz = "UTC"),
                geom = "0101000020E610000000000000000000000000000000000000") %>%
@@ -112,7 +112,7 @@ for (y in 1:length(years)) {
                exif_heading, exif_pitch, exif_roll,
                exif_gimbal_heading, exif_gimbal_pitch, exif_gimbal_roll,
                exif_lens, exif_zoom_factor,
-               for_calibration_lku, measurement_status_lku, use_for_model_lku,
+               use_image_for_lku, measurement_status_lku, 
                exif_relative_altitude_m, file_access_dt, geom)
       
       # Write data to the DB
