@@ -1,9 +1,9 @@
 # UAS Body Condition: Import LRF data to DB
-# S. Hardy
+# S. Koslovsky
 
 # Set Working Variables
 wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Measurements"
-years <- c(2021, 2022)
+years <- c(2021, 2022, 2023)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -122,7 +122,7 @@ for (y in 1:length(years)) {
           mutate(measured_by = sapply(strsplit(measurement_file_name, "_"), function(x) x[7]),
                  measurement_date = as.Date(sapply(strsplit(measurement_file_name, "_"), function(x) x[6]), format = "%Y%m%d")) %>%
           select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name) %>%
-          mutate(pixels_counted = ifelse(is.nan(pixels_counted), -99, pixels_counted))
+          mutate(pixels_counted = ifelse(is.nan(pixels_counted) | pixels_counted == '', -99, pixels_counted))
       }
       
       if(grepl("areas", files$file_name[j], fixed = TRUE) == TRUE) {
