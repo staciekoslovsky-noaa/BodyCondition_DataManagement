@@ -3,7 +3,9 @@
 
 # Set Working Variables
 wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Data"
-years <- c(2021, 2022)
+years <- c(2021, 
+  2022,
+  2023)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
@@ -35,7 +37,7 @@ con <- RPostgreSQL::dbConnect(PostgreSQL(),
                               password = Sys.getenv("admin_pw"))
                               #rstudioapi::askForPassword(paste("Enter your DB password for user account: ", Sys.getenv("pep_admin"), sep = "")))
 
-RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_lrf_feed")
+# RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_lrf_feed")
 
 imported <- RPostgreSQL::dbGetQuery(con, "SELECT DISTINCT lrf_file_name FROM body_condition.geo_lrf_feed")
 
@@ -77,7 +79,7 @@ for (y in 1:length(years)) {
           filter(nchar(gps_lon_ew) == 1) %>%
           filter(gps_magvar != "$GPRMC") %>%
           mutate(id = 1:n() + processed_id$max,
-                 lrf_file_name = files$file_name[j],
+                 lrf_file_name = tolower(files$file_name[j]),
                  gps_dt = ymd_hms(as.POSIXct(paste(utc_gps_date, utc_gps_time, sep = " "), format = "%m/%d/%y %H:%M:%OS", tz = "UTC"), tz = "UTC"),
                  laser_range_raw_m = as.numeric(laser_range_raw_m),
                  laser_range_median = as.numeric(laser_range_median),
