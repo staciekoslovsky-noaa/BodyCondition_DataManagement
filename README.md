@@ -1,5 +1,7 @@
 # Body Condition Data Management
 
+This repository stores code and processing information related to the body condition project.
+
 The Datasheets folder contains datasheets for individual field efforts. 
 
 R code for processing data are stored in the root of the folder. Code numbered 0+ are intended to be run sequentially as the data are available for processing. Code numbered 99 are stored for longetivity, but are intended to only be run once to address a specific issue or run as needed, depending on the intent of the code.
