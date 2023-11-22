@@ -29,3 +29,5 @@ Other code in the repository includes:
 * Code to evaluate error, based on measurements made from photos taken of a fixed length object (engine box):
 	* BodyCondition_99_Measurements_EngineBox.Rmd
 	* BodyCondition_99_Measurements_EngineBox_2ndTest.Rmd
+* Code to import validation data for captive animals:
+	* BodyCondition_99_ImportValidationData.R
