@@ -1,0 +1,60 @@
+CREATE VIEW body_condition.summ4analysis_modeldev AS
+SELECT *
+FROM 
+(SELECT field_efforts_id, image_name, adjusted_image_dt, split_part(split_part(target_identifier, ' ', 1), '_', 1) as target_identifier, target_posture, 
+	measured_by, measurement_date, exif_pitch, exif_roll, inclination,
+SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS scale_bar_cm,
+SUM(CASE measurement_type WHEN 'Total length' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS total_length_cm,
+(SUM(CASE measurement_type WHEN 'Total length' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS total_length_cm_adj,
+SUM(CASE measurement_type WHEN 'Width_01 (9%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_01_cm,
+SUM(CASE measurement_type WHEN 'Width_02 (18%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_02_cm,
+SUM(CASE measurement_type WHEN 'Width_03 (27%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_03_cm,
+SUM(CASE measurement_type WHEN 'Width_04 (36%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_04_cm,
+SUM(CASE measurement_type WHEN 'Width_05 (45%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_05_cm,
+SUM(CASE measurement_type WHEN 'Width_06 (54%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_06_cm,
+SUM(CASE measurement_type WHEN 'Width_07 (63%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_07_cm,
+SUM(CASE measurement_type WHEN 'Width_08 (72%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_08_cm,
+SUM(CASE measurement_type WHEN 'Width_09 (81%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_09_cm,
+SUM(CASE measurement_type WHEN 'Width_10 (90%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_10_cm,
+(SUM(CASE measurement_type WHEN 'Width_01 (9%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_01_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_02 (18%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_02_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_03 (27%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_03_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_04 (36%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_04_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_05 (45%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_05_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_06 (54%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_06_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_07 (63%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_07_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_08 (72%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_08_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_09 (81%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_09_cm_adj,
+(SUM(CASE measurement_type WHEN 'Width_10 (90%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
+	SUM(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_10_cm_adj
+
+FROM body_condition.tbl_measurements_converted
+WHERE target_identifier IS NOT NULL
+GROUP BY field_efforts_id, image_name, adjusted_image_dt, target_identifier, target_posture, measured_by, measurement_date, exif_pitch, exif_roll, inclination) as measured
+LEFT JOIN
+(SELECT field_efforts_id, animal_identifier AS target_identifier,
+AVG(CASE relative_week WHEN 'before' THEN mass_kg END) AS mass_kg_before_mean,
+MIN(CASE relative_week WHEN 'before' THEN mass_kg END) AS mass_kg_before_min,
+MAX(CASE relative_week WHEN 'before' THEN mass_kg END) AS mass_kg_before_max,
+
+AVG(CASE relative_week WHEN 'during' THEN mass_kg END) AS mass_kg_during_mean,
+MIN(CASE relative_week WHEN 'during' THEN mass_kg END) AS mass_kg_during_min,
+MAX(CASE relative_week WHEN 'during' THEN mass_kg END) AS mass_kg_during_max,
+
+AVG(CASE relative_week WHEN 'after' THEN mass_kg END) AS mass_kg_after_mean,
+MIN(CASE relative_week WHEN 'after' THEN mass_kg END) AS mass_kg_after_min,
+MAX(CASE relative_week WHEN 'after' THEN mass_kg END) AS mass_kg_after_max
+FROM body_condition.tbl_measurements_validation
+GROUP BY field_efforts_id, animal_identifier) AS valid
+USING (field_efforts_id, target_identifier)
+WHERE scale_bar_cm IS NOT NULL
