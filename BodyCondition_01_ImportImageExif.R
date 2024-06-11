@@ -1,11 +1,12 @@
 # UAS Body Condition: Import LRF data to DB
-# S. Hardy
+# S. Koslovsky
 
 # Set Working Variables
 wd <- "\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data"
 years <- c(#2021, 
   #2022,
-  2023)
+  #2023,
+  2024)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed

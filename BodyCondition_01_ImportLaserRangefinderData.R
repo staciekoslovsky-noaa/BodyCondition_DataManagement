@@ -3,9 +3,10 @@
 
 # Set Working Variables
 wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Data"
-years <- c(2021, 
-  2022,
-  2023)
+years <- c(#2021, 
+  #2022,
+  #2023,
+  2024)
 
 # Create functions -----------------------------------------------
 # Function to install packages needed
