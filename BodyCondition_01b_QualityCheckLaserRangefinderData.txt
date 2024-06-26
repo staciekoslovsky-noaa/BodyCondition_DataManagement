@@ -1,6 +1,6 @@
---Reset QA/QC flags
-UPDATE body_condition.geo_lrf_feed
-SET qa_status_lku = 'U';
+--Reset QA/QC flags - if need to reprocess everything, otherwise, only unprocessed data will be handled
+--UPDATE body_condition.geo_lrf_feed
+--SET qa_status_lku = 'U';
 
 --Remove records where values are before takeoff or after landing
 UPDATE body_condition.geo_lrf_feed l
