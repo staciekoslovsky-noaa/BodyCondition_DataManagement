@@ -96,7 +96,7 @@ for (y in 1:length(years)) {
         temp_lw <- lw %>%
           select(length_name, length_px, measurement_file_name)
         
-        toDB <- lw %>%
+        temp_tl <- lw %>%
           filter(length_name == "TL") %>%
           select(measurement_file_name, W_090pct_px, W_181pct_px, W_272pct_px, W_363pct_px, W_454pct_px, W_545pct_px, W_636pct_px, W_727pct_px, W_818pct_px, W_909pct_px) %>%
           pivot_longer(!measurement_file_name, names_to = "length_name") %>%
@@ -111,15 +111,35 @@ for (y in 1:length(years)) {
           mutate(length_name = ifelse(length_name == "W_636pct_px", "W07", length_name)) %>%  
           mutate(length_name = ifelse(length_name == "W_727pct_px", "W08", length_name)) %>%  
           mutate(length_name = ifelse(length_name == "W_818pct_px", "W09", length_name)) %>%  
-          mutate(length_name = ifelse(length_name == "W_909pct_px", "W10", length_name)) %>%
-          rbind(temp_lw) %>%
+          mutate(length_name = ifelse(length_name == "W_909pct_px", "W10", length_name))
+        
+        temp_sl <- lw %>%
+          filter(length_name == "SL") %>%
+          select(measurement_file_name, W_090pct_px, W_181pct_px, W_272pct_px, W_363pct_px, W_454pct_px, W_545pct_px, W_636pct_px, W_727pct_px, W_818pct_px, W_909pct_px) %>%
+          pivot_longer(!measurement_file_name, names_to = "length_name") %>%
+          rename(length_px = value) %>%
+          select(length_name, length_px, measurement_file_name) %>%
+          mutate(length_name = ifelse(length_name == "W_090pct_px", "S01", length_name)) %>% 
+          mutate(length_name = ifelse(length_name == "W_181pct_px", "S02", length_name)) %>% 
+          mutate(length_name = ifelse(length_name == "W_272pct_px", "S03", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_363pct_px", "S04", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_454pct_px", "S05", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_545pct_px", "S06", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_636pct_px", "S07", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_727pct_px", "S08", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_818pct_px", "S09", length_name)) %>%  
+          mutate(length_name = ifelse(length_name == "W_909pct_px", "S10", length_name)) 
+        
+        toDB <- temp_lw %>%
+          rbind(temp_tl) %>%
+          rbind(temp_sl) %>%
           mutate(id =  1:n() + processed_id$max,
                  image_name = image_name) %>%
           left_join(images_targets, by = "image_name") %>%
           filter(!is.na(target_id)) %>%
           rename(measurement_type_lku = length_name,
                  pixels_counted = length_px) %>%
-          mutate(measured_by = sapply(strsplit(measurement_file_name, "_"), function(x) x[7]),
+          mutate(measured_by = gsub("_", "", str_extract(measurement_file_name, "_[A-Z][A-Z][A-Z]_")),
                  measurement_date = as.Date(sapply(strsplit(measurement_file_name, "_"), function(x) x[6]), format = "%Y%m%d")) %>%
           select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name) %>%
           mutate(pixels_counted = ifelse(is.nan(pixels_counted) | pixels_counted == '', -99, pixels_counted))
@@ -144,7 +164,7 @@ for (y in 1:length(years)) {
           filter(!is.na(target_id)) %>%
           rename(measurement_type_lku = area_name,
                  pixels_counted = area_px) %>%
-          mutate(measured_by = sapply(strsplit(measurement_file_name, "_"), function(x) x[7]),
+          mutate(measured_by = gsub("_", "", str_extract(measurement_file_name, "_[A-Z][A-Z][A-Z]_")),
                  measurement_date = as.Date(sapply(strsplit(measurement_file_name, "_"), function(x) x[6]), format = "%Y%m%d")) %>%
           select(id, target_id, measurement_type_lku, pixels_counted, measured_by, measurement_date, image_id, target_posture_lku, measurement_file_name) %>%
           mutate(pixels_counted = ifelse(is.nan(pixels_counted), -99, pixels_counted))

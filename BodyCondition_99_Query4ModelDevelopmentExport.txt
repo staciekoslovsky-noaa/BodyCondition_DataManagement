@@ -1,19 +1,334 @@
-CREATE OR REPLACE VIEW body_condition.summ4analysis_modeldev AS
-SELECT field_efforts_id,
+ SELECT field_efforts_id,
     measured.target_identifier,
     measured.image_name,
     measured.adjusted_image_dt,
     measured.species,
     measured.sex,
     measured.age_class,
-	valid.age,
+    valid.age,
     measured.target_posture,
     measured.measured_by,
     measured.measurement_date,
     measured.exif_pitch,
     measured.exif_roll,
     measured.inclination,
-	measured.adjusted_mean_laser_range_raw_m as adjusted_range_m,
+    measured.adjusted_mean_laser_range_raw_m AS adjusted_range_m,
+    measured.scale_bar_cm,
+    measured.total_length_cm,
+    measured.total_length_cm * 100::numeric / measured.scale_bar_cm AS total_length_cm_adj,
+    measured.width_01_cm,
+    measured.width_02_cm,
+    measured.width_03_cm,
+    measured.width_04_cm,
+    measured.width_05_cm,
+    measured.width_06_cm,
+    measured.width_07_cm,
+    measured.width_08_cm,
+    measured.width_09_cm,
+    measured.width_10_cm,
+    measured.footprint_cm2,
+    measured.width_01_cm * 100::numeric / measured.scale_bar_cm AS width_01_cm_adj,
+    measured.width_02_cm * 100::numeric / measured.scale_bar_cm AS width_02_cm_adj,
+    measured.width_03_cm * 100::numeric / measured.scale_bar_cm AS width_03_cm_adj,
+    measured.width_04_cm * 100::numeric / measured.scale_bar_cm AS width_04_cm_adj,
+    measured.width_05_cm * 100::numeric / measured.scale_bar_cm AS width_05_cm_adj,
+    measured.width_06_cm * 100::numeric / measured.scale_bar_cm AS width_06_cm_adj,
+    measured.width_07_cm * 100::numeric / measured.scale_bar_cm AS width_07_cm_adj,
+    measured.width_08_cm * 100::numeric / measured.scale_bar_cm AS width_08_cm_adj,
+    measured.width_09_cm * 100::numeric / measured.scale_bar_cm AS width_09_cm_adj,
+    measured.width_10_cm * 100::numeric / measured.scale_bar_cm AS width_10_cm_adj,
+    measured.footprint_cm2::double precision * (100::double precision ^ 2::double precision) / (measured.scale_bar_cm::double precision ^ 2::double precision) AS footprint_cm2_adj,
+    measured_s.measured_by AS measured_by_s,
+    measured_s.measurement_date AS measurement_date_s,
+    measured_s.total_length_cm_s,
+    measured_s.total_length_cm_s * 100::numeric / measured.scale_bar_cm AS total_length_cm_adj_s,
+    measured_s.width_01_cm_s,
+    measured_s.width_02_cm_s,
+    measured_s.width_03_cm_s,
+    measured_s.width_04_cm_s,
+    measured_s.width_05_cm_s,
+    measured_s.width_06_cm_s,
+    measured_s.width_07_cm_s,
+    measured_s.width_08_cm_s,
+    measured_s.width_09_cm_s,
+    measured_s.width_10_cm_s,
+    measured_s.width_01_cm_s * 100::numeric / measured.scale_bar_cm AS width_01_cm_adj_s,
+    measured_s.width_02_cm_s * 100::numeric / measured.scale_bar_cm AS width_02_cm_adj_s,
+    measured_s.width_03_cm_s * 100::numeric / measured.scale_bar_cm AS width_03_cm_adj_s,
+    measured_s.width_04_cm_s * 100::numeric / measured.scale_bar_cm AS width_04_cm_adj_s,
+    measured_s.width_05_cm_s * 100::numeric / measured.scale_bar_cm AS width_05_cm_adj_s,
+    measured_s.width_06_cm_s * 100::numeric / measured.scale_bar_cm AS width_06_cm_adj_s,
+    measured_s.width_07_cm_s * 100::numeric / measured.scale_bar_cm AS width_07_cm_adj_s,
+    measured_s.width_08_cm_s * 100::numeric / measured.scale_bar_cm AS width_08_cm_adj_s,
+    measured_s.width_09_cm_s * 100::numeric / measured.scale_bar_cm AS width_09_cm_adj_s,
+    measured_s.width_10_cm_s * 100::numeric / measured.scale_bar_cm AS width_10_cm_adj_s,
+    valid.before_date,
+    valid.mass_kg_before_mean,
+    valid.mass_kg_before_min,
+    valid.mass_kg_before_max,
+    valid.during_date,
+    valid.mass_kg_during_mean,
+    valid.mass_kg_during_min,
+    valid.mass_kg_during_max,
+    valid.after_date,
+    valid.mass_kg_after_mean,
+    valid.mass_kg_after_min,
+    valid.mass_kg_after_max
+   FROM ( SELECT tbl_measurements_converted.field_efforts_id,
+            tbl_measurements_converted.image_name,
+            tbl_measurements_converted.adjusted_image_dt,
+            split_part(split_part(tbl_measurements_converted.target_identifier::text, ' '::text, 1), '_'::text, 1) AS target_identifier,
+            lku_species.common_name AS species,
+            lku_sex.sex,
+            lku_age_class.age_class,
+            tbl_measurements_converted.target_posture,
+            tbl_measurements_converted.measured_by,
+            tbl_measurements_converted.measurement_date,
+            tbl_measurements_converted.exif_pitch,
+            tbl_measurements_converted.exif_roll,
+            tbl_measurements_converted.inclination,
+            tbl_measurements_converted.adjusted_mean_laser_range_raw_m,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS scale_bar_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved standard length'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS total_length_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_01 (9%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_01_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_02 (18%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_02_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_03 (27%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_03_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_04 (36%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_04_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_05 (45%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_05_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_06 (54%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_06_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_07 (63%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_07_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_08 (72%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_08_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_09 (81%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_09_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_10 (90%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_10_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Footprint (without flippers)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm2
+                    ELSE NULL::numeric
+                END) AS footprint_cm2,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Footprint (without flippers)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm2
+                    ELSE NULL::numeric
+                END)::double precision * (100::double precision ^ 2::double precision) / (avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) ^ 2::numeric)::double precision AS footprint_cm2_adj
+           FROM body_condition.tbl_measurements_converted
+             LEFT JOIN body_condition.tbl_targets USING (target_identifier)
+             LEFT JOIN body_condition.lku_species USING (species_lku)
+             LEFT JOIN body_condition.lku_sex USING (sex_lku)
+             LEFT JOIN body_condition.lku_age_class USING (age_class_lku)
+          WHERE tbl_measurements_converted.target_identifier IS NOT NULL
+          GROUP BY tbl_measurements_converted.field_efforts_id, tbl_measurements_converted.image_name, tbl_measurements_converted.adjusted_image_dt, tbl_measurements_converted.target_identifier, lku_species.common_name, lku_sex.sex, lku_age_class.age_class, tbl_measurements_converted.target_posture, tbl_measurements_converted.measured_by, tbl_measurements_converted.measurement_date, tbl_measurements_converted.exif_pitch, tbl_measurements_converted.exif_roll, tbl_measurements_converted.inclination, tbl_measurements_converted.adjusted_mean_laser_range_raw_m) measured
+     LEFT JOIN ( SELECT tbl_measurements_converted.image_name,
+            tbl_measurements_converted.measured_by,
+            tbl_measurements_converted.measurement_date,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight standard length'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS total_length_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_01 (9%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_01_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_02 (18%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_02_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_03 (27%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_03_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_04 (36%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_04_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_05 (45%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_05_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_06 (54%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_06_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_07 (63%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_07_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_08 (72%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_08_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_09 (81%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_09_cm_s,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Straight width_10 (90%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_10_cm_s
+           FROM body_condition.tbl_measurements_converted
+          WHERE tbl_measurements_converted.target_identifier IS NOT NULL
+          GROUP BY tbl_measurements_converted.image_name, tbl_measurements_converted.measured_by, tbl_measurements_converted.measurement_date) measured_s USING (image_name)
+     LEFT JOIN ( SELECT tbl_measurements_validation.field_efforts_id,
+            tbl_measurements_validation.animal_identifier AS target_identifier,
+            tbl_measurements_validation.age,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.week_of
+                    ELSE NULL::text
+                END) AS before_date,
+            avg(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_before_mean,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_before_min,
+            max(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_before_max,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.week_of
+                    ELSE NULL::text
+                END) AS during_date,
+            avg(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'during'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_during_mean,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'during'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_during_min,
+            max(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'during'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_during_max,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.week_of
+                    ELSE NULL::text
+                END) AS after_date,
+            avg(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'after'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_after_mean,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'after'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_after_min,
+            max(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'after'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_after_max
+           FROM body_condition.tbl_measurements_validation
+          GROUP BY tbl_measurements_validation.field_efforts_id, tbl_measurements_validation.animal_identifier, tbl_measurements_validation.age) valid USING (field_efforts_id, target_identifier)
+  WHERE measured.scale_bar_cm IS NOT NULL;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--OLD CODE without straight line lenght/width measurements and an exaggerated way to calculate the adjusted measurements
+ SELECT field_efforts_id,
+    measured.target_identifier,
+    measured.image_name,
+    measured.adjusted_image_dt,
+    measured.species,
+    measured.sex,
+    measured.age_class,
+    valid.age,
+    measured.target_posture,
+    measured.measured_by,
+    measured.measurement_date,
+    measured.exif_pitch,
+    measured.exif_roll,
+    measured.inclination,
+    measured.adjusted_mean_laser_range_raw_m AS adjusted_range_m,
     measured.scale_bar_cm,
     measured.total_length_cm,
     measured.total_length_cm_adj,
@@ -27,7 +342,7 @@ SELECT field_efforts_id,
     measured.width_08_cm,
     measured.width_09_cm,
     measured.width_10_cm,
-	measured.footprint_cm2,
+    measured.footprint_cm2,
     measured.width_01_cm_adj,
     measured.width_02_cm_adj,
     measured.width_03_cm_adj,
@@ -38,7 +353,7 @@ SELECT field_efforts_id,
     measured.width_08_cm_adj,
     measured.width_09_cm_adj,
     measured.width_10_cm_adj,
-	measured.footprint_cm2_adj,
+    measured.footprint_cm2_adj,
     valid.before_date,
     valid.mass_kg_before_mean,
     valid.mass_kg_before_min,
@@ -51,72 +366,263 @@ SELECT field_efforts_id,
     valid.mass_kg_after_mean,
     valid.mass_kg_after_min,
     valid.mass_kg_after_max
-FROM 
-	(SELECT field_efforts_id, image_name, adjusted_image_dt, split_part(split_part(target_identifier, ' ', 1), '_', 1) as target_identifier, common_name as species, sex, age_class, target_posture, 
-		measured_by, measurement_date, exif_pitch, exif_roll, inclination, adjusted_mean_laser_range_raw_m,
-	AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS scale_bar_cm,
-	AVG(CASE measurement_type WHEN 'Total length' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS total_length_cm,
-	(AVG(CASE measurement_type WHEN 'Total length' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS total_length_cm_adj,
-	AVG(CASE measurement_type WHEN 'Width_01 (9%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_01_cm,
-	AVG(CASE measurement_type WHEN 'Width_02 (18%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_02_cm,
-	AVG(CASE measurement_type WHEN 'Width_03 (27%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_03_cm,
-	AVG(CASE measurement_type WHEN 'Width_04 (36%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_04_cm,
-	AVG(CASE measurement_type WHEN 'Width_05 (45%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_05_cm,
-	AVG(CASE measurement_type WHEN 'Width_06 (54%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_06_cm,
-	AVG(CASE measurement_type WHEN 'Width_07 (63%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_07_cm,
-	AVG(CASE measurement_type WHEN 'Width_08 (72%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_08_cm,
-	AVG(CASE measurement_type WHEN 'Width_09 (81%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_09_cm,
-	AVG(CASE measurement_type WHEN 'Width_10 (90%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_10_cm,
-	AVG(CASE measurement_type WHEN 'Footprint (without flippers)' THEN measurement_based_on_lrf_adjusted_mean_range_cm2 END) AS footprint_cm2,
-	(AVG(CASE measurement_type WHEN 'Width_01 (9%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_01_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_02 (18%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_02_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_03 (27%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_03_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_04 (36%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_04_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_05 (45%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_05_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_06 (54%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_06_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_07 (63%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_07_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_08 (72%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_08_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_09 (81%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_09_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Width_10 (90%)' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) * 100) /
-		AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END) AS width_10_cm_adj,
-	(AVG(CASE measurement_type WHEN 'Footprint (without flippers)' THEN measurement_based_on_lrf_adjusted_mean_range_cm2 END) * (100^2)) /
-		(AVG(CASE measurement_type WHEN 'Scale bar' THEN measurement_based_on_lrf_adjusted_mean_range_cm END)^2) AS footprint_cm2_adj
-
-	FROM body_condition.tbl_measurements_converted
-	LEFT JOIN body_condition.tbl_targets USING (target_identifier)
-	LEFT JOIN body_condition.lku_species USING (species_lku)
-	LEFT JOIN body_condition.lku_sex USING (sex_lku)
-	LEFT JOIN body_condition.lku_age_class USING (age_class_lku)
-	WHERE target_identifier IS NOT NULL
-	GROUP BY field_efforts_id, image_name, adjusted_image_dt, target_identifier, common_name, sex, age_class, target_posture, measured_by, measurement_date, exif_pitch, exif_roll, inclination, adjusted_mean_laser_range_raw_m) as measured
-
-LEFT JOIN
-	(SELECT field_efforts_id, animal_identifier AS target_identifier, age,
-	MIN(CASE relative_week WHEN 'before' THEN week_of END) AS before_date,
-	AVG(CASE relative_week WHEN 'before' THEN mass_kg END) AS mass_kg_before_mean,
-	MIN(CASE relative_week WHEN 'before' THEN mass_kg END) AS mass_kg_before_min,
-	MAX(CASE relative_week WHEN 'before' THEN mass_kg END) AS mass_kg_before_max,
-
-	MIN(CASE relative_week WHEN 'before' THEN week_of END) AS during_date,
-	AVG(CASE relative_week WHEN 'during' THEN mass_kg END) AS mass_kg_during_mean,
-	MIN(CASE relative_week WHEN 'during' THEN mass_kg END) AS mass_kg_during_min,
-	MAX(CASE relative_week WHEN 'during' THEN mass_kg END) AS mass_kg_during_max,
-
-	MIN(CASE relative_week WHEN 'before' THEN week_of END) AS after_date,
-	AVG(CASE relative_week WHEN 'after' THEN mass_kg END) AS mass_kg_after_mean,
-	MIN(CASE relative_week WHEN 'after' THEN mass_kg END) AS mass_kg_after_min,
-	MAX(CASE relative_week WHEN 'after' THEN mass_kg END) AS mass_kg_after_max
-	FROM body_condition.tbl_measurements_validation
-	GROUP BY field_efforts_id, animal_identifier, age) AS valid
-USING (field_efforts_id, target_identifier)
-WHERE scale_bar_cm IS NOT NULL
+   FROM ( SELECT tbl_measurements_converted.field_efforts_id,
+            tbl_measurements_converted.image_name,
+            tbl_measurements_converted.adjusted_image_dt,
+            split_part(split_part(tbl_measurements_converted.target_identifier::text, ' '::text, 1), '_'::text, 1) AS target_identifier,
+            lku_species.common_name AS species,
+            lku_sex.sex,
+            lku_age_class.age_class,
+            tbl_measurements_converted.target_posture,
+            tbl_measurements_converted.measured_by,
+            tbl_measurements_converted.measurement_date,
+            tbl_measurements_converted.exif_pitch,
+            tbl_measurements_converted.exif_roll,
+            tbl_measurements_converted.inclination,
+            tbl_measurements_converted.adjusted_mean_laser_range_raw_m,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS scale_bar_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved standard length'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS total_length_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved standard length'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS total_length_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_01 (9%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_01_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_02 (18%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_02_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_03 (27%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_03_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_04 (36%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_04_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_05 (45%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_05_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_06 (54%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_06_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_07 (63%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_07_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_08 (72%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_08_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_09 (81%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_09_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_10 (90%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_10_cm,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Footprint (without flippers)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm2
+                    ELSE NULL::numeric
+                END) AS footprint_cm2,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_01 (9%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_01_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_02 (18%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_02_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_03 (27%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_03_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_04 (36%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_04_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_05 (45%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_05_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_06 (54%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_06_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_07 (63%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_07_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_08 (72%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_08_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_09 (81%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_09_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Curved width_10 (90%)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) * 100::numeric / avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) AS width_10_cm_adj,
+            avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Footprint (without flippers)'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm2
+                    ELSE NULL::numeric
+                END)::double precision * (100::double precision ^ 2::double precision) / (avg(
+                CASE tbl_measurements_converted.measurement_type
+                    WHEN 'Scale bar'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
+                    ELSE NULL::numeric
+                END) ^ 2::numeric)::double precision AS footprint_cm2_adj
+           FROM body_condition.tbl_measurements_converted
+             LEFT JOIN body_condition.tbl_targets USING (target_identifier)
+             LEFT JOIN body_condition.lku_species USING (species_lku)
+             LEFT JOIN body_condition.lku_sex USING (sex_lku)
+             LEFT JOIN body_condition.lku_age_class USING (age_class_lku)
+          WHERE tbl_measurements_converted.target_identifier IS NOT NULL
+          GROUP BY tbl_measurements_converted.field_efforts_id, tbl_measurements_converted.image_name, tbl_measurements_converted.adjusted_image_dt, tbl_measurements_converted.target_identifier, lku_species.common_name, lku_sex.sex, lku_age_class.age_class, tbl_measurements_converted.target_posture, tbl_measurements_converted.measured_by, tbl_measurements_converted.measurement_date, tbl_measurements_converted.exif_pitch, tbl_measurements_converted.exif_roll, tbl_measurements_converted.inclination, tbl_measurements_converted.adjusted_mean_laser_range_raw_m) measured
+     LEFT JOIN ( SELECT tbl_measurements_validation.field_efforts_id,
+            tbl_measurements_validation.animal_identifier AS target_identifier,
+            tbl_measurements_validation.age,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.week_of
+                    ELSE NULL::text
+                END) AS before_date,
+            avg(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_before_mean,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_before_min,
+            max(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_before_max,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.week_of
+                    ELSE NULL::text
+                END) AS during_date,
+            avg(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'during'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_during_mean,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'during'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_during_min,
+            max(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'during'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_during_max,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'before'::text THEN tbl_measurements_validation.week_of
+                    ELSE NULL::text
+                END) AS after_date,
+            avg(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'after'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_after_mean,
+            min(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'after'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_after_min,
+            max(
+                CASE tbl_measurements_validation.relative_week
+                    WHEN 'after'::text THEN tbl_measurements_validation.mass_kg
+                    ELSE NULL::double precision
+                END) AS mass_kg_after_max
+           FROM body_condition.tbl_measurements_validation
+          GROUP BY tbl_measurements_validation.field_efforts_id, tbl_measurements_validation.animal_identifier, tbl_measurements_validation.age) valid USING (field_efforts_id, target_identifier)
+  WHERE measured.scale_bar_cm IS NOT NULL;
