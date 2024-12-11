@@ -152,12 +152,12 @@
                 END) AS width_10_cm,
 	        avg(
                 CASE tbl_measurements_converted.measurement_type
-                    WHEN 'Axillary width'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm2
+                    WHEN 'Axillary width'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
                     ELSE NULL::numeric
                 END) AS ax_width_cm,
 	 	    avg(
                 CASE tbl_measurements_converted.measurement_type
-                    WHEN 'Maximum width'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm2
+                    WHEN 'Maximum width'::text THEN tbl_measurements_converted.measurement_based_on_lrf_adjusted_mean_range_cm
                     ELSE NULL::numeric
                 END) AS max_width_cm,
             avg(

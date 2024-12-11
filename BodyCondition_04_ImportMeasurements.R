@@ -2,7 +2,7 @@
 # S. Koslovsky
 
 # Set Working Variables
-wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Measurements"
+wd <- "Y:\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Measurements"
 years <- c(2021, 2022, 2023)
 
 # Create functions -----------------------------------------------
