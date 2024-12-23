@@ -2,6 +2,8 @@
 --UPDATE body_condition.geo_lrf_feed
 --SET qa_status_lku = 'U';
 
+--Run each section by section; running all the code takes forever for some reason...!!!!!!
+
 --Remove records where values are before takeoff or after landing
 UPDATE body_condition.geo_lrf_feed l
 SET qa_status_lku = 'X_ba'
