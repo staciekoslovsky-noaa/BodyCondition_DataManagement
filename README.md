@@ -11,10 +11,10 @@ The data management processing code is as follows:
 * **BodyCondition_00_RenameImages_M30T.R** - code to rename images collected by the M30T drone; currently in development and on-hold until we decide how we will move forward with handling and processing those images
 * **BodyCondition_01_ImportImageExif.R** - code to import image-associated exif data into the DB; must be imported before measurements can begin (for the M2EA drone configuration)
 * **BodyCondition_01_ImportLaserRangefinderData.R** - code to import LRF data into the DB; must be imported before measurements can begin (for the M2EA drone configuration)
-* **BodyCondition_01b_QualityCheckLaserRangefinderData.txt** - code to run QA/QC on the LRF data (for the M2EA drone configuration); this code is run in PGAdmin
-* **BodyCondition_02_AssignImages2Flight.txt** - code to assign images to flight data; the data from the field datasheets MUST be entered into the DB before this code is run!!
-* **BodyCondition_03_CalculateAdjustedImageTime.txt** - code to update image date/time based on known GPS offset; the data from the field datasheets MUST be entered into the DB before this code is run!!
-* **BodyCondition_04_ImportMeasurements.R** - code to import measurements (after they have been completed or updated) into the DB; if a change is made to the measurements data, it is up to the person measuring the seal or object to delete the incorrect measurements from the DB!
+* **BodyCondition_02a_QualityCheckLaserRangefinderData.txt** - code to run QA/QC on the LRF data (for the M2EA drone configuration); this code is run in PGAdmin
+* **BodyCondition_02b_AssignImages2Flight.txt** - code to assign images to flight data; the data from the field datasheets MUST be entered into the DB before this code is run!!
+* **BodyCondition_02c_CalculateAdjustedImageTime.txt** - code to update image date/time based on known GPS offset; the data from the field datasheets MUST be entered into the DB before this code is run!!
+* **BodyCondition_03_ImportMeasurements.R** - code to import measurements (after they have been completed or updated) into the DB; if a change is made to the measurements data, it is up to the person measuring the seal or object to delete the incorrect measurements from the DB!
 
 Other code in the repository includes:
 * Code to generate reports (in the field or afterwards) to review the data collected for potential issues:
@@ -31,3 +31,7 @@ Other code in the repository includes:
 	* BodyCondition_99_Measurements_EngineBox_2ndTest.Rmd
 * Code to import validation data for captive animals:
 	* BodyCondition_99_ImportValidationData.R
+* Code to create the dataset used for analysis:
+	* BodyCondition_99_Query4ModelDevelopmentExport.txt
+	
+This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration, or the United States Department of Commerce. All NOAA GitHub project code is provided on an ‘as is’ basis and the user assumes responsibility for its use. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
