@@ -72,7 +72,7 @@ for (y in 1:length(years)) {
     
     # Process and import data if any images remain in list
     if (nrow(images) > 0) {
-      original_exif <- exifr::read_exif("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\test_exif_DO_NOT_DELETE.JPG", tags = tags)
+      original_exif <- exifr::read_exif("\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data\\test_exif_DO_NOT_DELETE_M2EA.JPG", tags = tags)
       original_exif <- data.frame(SourceFile = original_exif[0, c(1:2)], stringsAsFactors = FALSE)
       
       temp_exif <- exifr::read_exif(images$path, tags = tags)
@@ -107,14 +107,15 @@ for (y in 1:length(years)) {
                measurement_status_lku = 'Q',
                exif_relative_altitude_m = RelativeAltitude,
                file_access_dt = format(lubridate::ymd_hms(FileAccessDate, tz = "America/Vancouver"), tz = "UTC"),
-               geom = "0101000020E610000000000000000000000000000000000000") %>%
+               geom = "0101000020E610000000000000000000000000000000000000",
+               drone = "M2EA") %>%
         select(id, image_name, image_path,
                exif_image_dt, exif_latitude, exif_longitude, exif_altitude_m,
                exif_heading, exif_pitch, exif_roll,
                exif_gimbal_heading, exif_gimbal_pitch, exif_gimbal_roll,
                exif_lens, exif_zoom_factor,
                use_image_for_lku, measurement_status_lku, 
-               exif_relative_altitude_m, file_access_dt, geom)
+               exif_relative_altitude_m, file_access_dt, geom, drone)
       
       # Write data to the DB
       RPostgreSQL::dbWriteTable(con, c("body_condition", "geo_images"), original_exif, append = TRUE, row.names = FALSE)
