@@ -37,7 +37,7 @@ flights <- flights[grep("fl", flights)]
 
 tags <- c("SourceFile", "FileName", "DateTimeOriginal")
 
-exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE.JPG", sep = ""), tags = tags)
+exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE_M2EA.JPG", sep = ""), tags = tags)
 exif$flight <- ''
 exif <- data.frame(exif[0, c(1:4)], stringsAsFactors = FALSE)
 
