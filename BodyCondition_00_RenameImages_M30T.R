@@ -39,9 +39,9 @@ flights <- list.dirs(path, full.names = FALSE,
                      # recursive = TRUE)  # use when images are split into camera folders within flight
 flights <- flights[grep("fl", flights)]
 
-tags <- c("SourceFile", "FileName", "DateTimeOriginal", "Model", "LRFStatus", "LRFTargetDistance", "LRFTargetLon", "LRFTargetLat", "LRFTargetAlt", "LRFTargetAbsAlt")
+tags <- c("SourceFile", "FileName", "DateTimeOriginal", "Model")
 
-exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE.JPG", sep = ""), tags = tags)
+exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE_M30T.JPG", sep = ""), tags = tags)
 exif$flight <- ''
 exif <- data.frame(exif[0, c(1:5)], stringsAsFactors = FALSE)
 
