@@ -2,8 +2,8 @@
 
 # Set variables -------------------
 wd <- "C:/smk/"
-date_folder <- "2023-07-11"
-image_prefix <- "ucsc"
+date_folder <- "2024-04-25_X_M30T_NotReady4Import"
+image_prefix <- "norse"
 
 #process <- "move+rename"
 process <- "rename_only" # keeps the images in the fl## folder -- will likely be rarely used as an option
@@ -39,7 +39,7 @@ flights <- list.dirs(path, full.names = FALSE,
                      # recursive = TRUE)  # use when images are split into camera folders within flight
 flights <- flights[grep("fl", flights)]
 
-tags <- c("SourceFile", "FileName", "DateTimeOriginal", "Model")
+tags <- c("SourceFile", "FileName", "DateTimeOriginal", "Model", "LRFStatus", "LRFTargetDistance", "LRFTargetLon", "LRFTargetLat", "LRFTargetAlt", "LRFTargetAbsAlt")
 
 exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE.JPG", sep = ""), tags = tags)
 exif$flight <- ''
@@ -56,18 +56,18 @@ for (i in 1:length(flights)){
 exif <- exif %>%
   arrange(DateTimeOriginal) %>%
   mutate(image_num = 1,
-         file_ext = tools::file_ext(FileName))
+         file_ext = tools::file_ext(FileName),
+         image_name_num = gsub("_", "", str_extract(FileName, "_[0-9][0-9][0-9][0-9]_")),
+         image_name_type = gsub(".JPG", "", gsub("_", "", str_extract(FileName, "_[A-Z].JPG"))))
 
 for (i in 2:nrow(exif)) {
-  exif$image_type[i] <- ifelse(exif$Model[i] == 'M30T', substrRight(strsplit(exif$FileName[i], "[.]")[[1]][1], 1), 'X')
-  exif$image_num[i] <- ifelse(exif$Model[i] == 'M30T',
-                              ,
-                                  ifelse(exif$file_ext[i] == exif$file_ext[i-1], exif$image_num[i-1] + 1, 
-                                      ifelse(exif$DateTimeOriginal[i] == exif$DateTimeOriginal[i-1], exif$image_num[i-1], exif$image_num[i-1] + 1)))
+  exif$image_num[i] <- ifelse(exif$image_name_num[i] == exif$image_name_num[i-1], exif$image_num[i-1], exif$image_num[i-1] + 1)
 }
 
 exif <- exif %>%
-  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
+  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(substr(date_folder, 1, 10), "-", ""), "-", ""), "_", flight, 
+                         "_", sprintf("%04d", image_num), "_", image_name_type, ".", file_ext, 
+                         sep = "")) %>%
   select(SourceFile, FileName, NewName, flight)
 
 for (i in 1:nrow(exif)){
