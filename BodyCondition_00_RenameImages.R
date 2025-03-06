@@ -1,12 +1,12 @@
 # Rename UAS body condition images 
 
 # Set variables -------------------
-wd <- "C:/smk/"
-date_folder <- "2024-04-25_X_M30T_NotReady4Import"
-image_prefix <- "norse"
+wd <- "O:\\Data\\UAS\\UAS_BodyCondition\\Data\\2023\\"
+date_folder <- "2023-07-13_M30T" # Must be in the format YYYY-MM-DD_[DroneIdentifier]; e.g. '2024-04-25_M30T'
+image_prefix <- "ucsc"
 
-#process <- "move+rename"
-process <- "rename_only" # keeps the images in the fl## folder -- will likely be rarely used as an option
+process <- "move+rename"
+#process <- "rename_only" # keeps the images in the fl## folder -- will likely be rarely used as an option
 
 # NEED C:\\Strawberry installed before running
 
@@ -33,6 +33,8 @@ install_pkg("stringr")
 # Rename images -------------------
 path <- paste(wd, date_folder, "Images", sep = "//")
 setwd(path)
+
+drone <- gsub("^.*_", "", date_folder)
       
 flights <- list.dirs(path, full.names = FALSE, 
                      recursive = FALSE) # use most of the time
@@ -41,9 +43,14 @@ flights <- flights[grep("fl", flights)]
 
 tags <- c("SourceFile", "FileName", "DateTimeOriginal", "Model")
 
-exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE_M30T.JPG", sep = ""), tags = tags)
+if (drone == "M30T") {
+  exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE_M30T.JPG", sep = ""), tags = tags)
+} else {
+  exif <- exifr::read_exif(paste(wd, "test_exif_DO_NOT_DELETE_M2EA.JPG", sep = ""), tags = tags)
+}
+
 exif$flight <- ''
-exif <- data.frame(exif[0, c(1:5)], stringsAsFactors = FALSE)
+exif <- data.frame(exif[0, c(1:4)], stringsAsFactors = FALSE)
 
 for (i in 1:length(flights)){
   images <- list.files(flights[i], pattern = "jpg$|JPG$|dng$|DNG$", full.names = TRUE, recursive = TRUE)
@@ -64,11 +71,18 @@ for (i in 2:nrow(exif)) {
   exif$image_num[i] <- ifelse(exif$image_name_num[i] == exif$image_name_num[i-1], exif$image_num[i-1], exif$image_num[i-1] + 1)
 }
 
-exif <- exif %>%
-  mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(substr(date_folder, 1, 10), "-", ""), "-", ""), "_", flight, 
-                         "_", sprintf("%04d", image_num), "_", image_name_type, ".", file_ext, 
-                         sep = "")) %>%
-  select(SourceFile, FileName, NewName, flight)
+# Rename based on drone type
+if (drone == "M30T") {
+  exif <- exif %>%
+    mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(substr(date_folder, 1, 10), "-", ""), "-", ""), "_", flight, 
+                           "_", sprintf("%04d", image_num), "_", image_name_type, ".", file_ext, 
+                           sep = "")) %>%
+    select(SourceFile, FileName, NewName, flight)
+} else {
+  exif <- exif %>%
+    mutate(NewName = paste(image_prefix, "_", str_replace(str_replace(date_folder, "-", ""), "-", ""), "_", flight, "_", sprintf("%04d", image_num), ".", file_ext, sep = "")) %>%
+    select(SourceFile, FileName, NewName, flight)
+}
 
 for (i in 1:nrow(exif)){
   if (process == "move+rename") {
