@@ -5,7 +5,7 @@
 wd <- "\\\\akc0ss-n086\\NMML_Polar\\Data\\UAS\\UAS_BodyCondition\\Data"
 years <- c(#2021, 
   #2022,
-  #2023,
+  2023,
   2024
   )
 
@@ -40,16 +40,16 @@ tags_m30t <- c("SourceFile", "FileName", "FileAccessDate", "DateTimeOriginal",
                "FlightYawDegree", "FlightPitchDegree", "FlightRollDegree",
                "GimbalYawDegree", "GimbalPitchDegree", "GimbalRollDegree",
                "LensInfo", "DigitalZoomRatio", "LRFStatus", "LRFTargetDistance", 
-               "LRFTargetLon", "LRFTargetLat", "LRFTargetAlt", "LRFTargetAbsAlt")
+               "LRFTargetLon", "LRFTargetLat", "LRFTargetAlt", "LRFTargetAbsAlt", 
+               "FocalLength", "FocalLengthIn35mmFormat")
 
 # Get list of already imported data from DB
 con <- RPostgreSQL::dbConnect(PostgreSQL(), 
                               dbname = Sys.getenv("pep_db"), 
                               host = Sys.getenv("pep_ip"), 
-                              #port = Sys.getenv("pep_port"), 
                               user = Sys.getenv("pep_admin"), 
                               password = Sys.getenv("admin_pw"))
-                              #rstudioapi::askForPassword(paste("Enter your DB password for user account: ", Sys.getenv("pep_admin"), sep = "")))
+
 
 # RPostgreSQL::dbSendQuery(con, "DELETE FROM body_condition.geo_images")
 
@@ -132,7 +132,9 @@ for (y in 1:length(years)) {
                  lrf_target_long = LRFTargetLon, 
                  lrf_target_lat = LRFTargetLat, 
                  lrf_target_alt = LRFTargetAlt, 
-                 lrf_target_alt_abs = LRFTargetAbsAlt) %>%
+                 lrf_target_alt_abs = LRFTargetAbsAlt,
+                 focal_length = FocalLength,
+                 focal_length_35mm = FocalLengthIn35mmFormat) %>%
           select(id, image_name, image_path,
                  exif_image_dt, exif_latitude, exif_longitude, exif_altitude_m,
                  exif_heading, exif_pitch, exif_roll,
@@ -140,7 +142,8 @@ for (y in 1:length(years)) {
                  exif_lens, exif_zoom_factor,
                  use_image_for_lku, measurement_status_lku, 
                  exif_relative_altitude_m, file_access_dt, geom,
-                 lrf_status, lrf_target_dist, lrf_target_long, lrf_target_lat, lrf_target_alt, lrf_target_alt_abs)
+                 lrf_status, lrf_target_dist, lrf_target_long, lrf_target_lat, lrf_target_alt, lrf_target_alt_abs,
+                 focal_length, focal_length_35mm)
       } else {
         original_exif <- original_exif %>%
           mutate(id = 1:n() + processed_id$max,
